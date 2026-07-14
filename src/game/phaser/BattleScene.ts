@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { COMBAT_BALANCE } from '../balance';
-import { createCombatEngine } from '../combatEngine';
 import type { ActorId, CombatEvent, CombatSnapshot } from '../types';
+import { createCampaignController } from '../campaign/campaignController';
+import type { CampaignSnapshot, EncounterVisual } from '../campaign/campaignTypes';
 import type { BattleStatus } from './battleGame';
 
 const WORLD_WIDTH = 960;
@@ -12,13 +13,17 @@ const PLAYER_POSITION = { x: 270, y: 414 } as const;
 const ENEMY_POSITION = { x: 690, y: 414 } as const;
 
 export class BattleScene extends Phaser.Scene {
-  private readonly engine = createCombatEngine();
+  private readonly campaign = createCampaignController();
   private playerContainer?: Phaser.GameObjects.Container;
   private enemyContainer?: Phaser.GameObjects.Container;
   private playerHealthFill?: Phaser.GameObjects.Graphics;
   private enemyHealthFill?: Phaser.GameObjects.Graphics;
+  private chapterBackdrop?: Phaser.GameObjects.Graphics;
   private statusText?: Phaser.GameObjects.Text;
   private statusElapsedMs = 0;
+  private renderedVisualName?: string;
+  private renderedChapterNumber?: number;
+  private pendingEnemyVisual?: EncounterVisual;
   private failed = false;
 
   constructor(
@@ -32,15 +37,12 @@ export class BattleScene extends Phaser.Scene {
     if (this.failed) return;
 
     try {
-      this.drawBackdrop();
+      const snapshot = this.campaign.getSnapshot();
+      this.drawBackdrop(snapshot.chapter.backgroundColor);
 
       const player = this.drawAri();
       this.playerContainer = player.container;
       this.playerHealthFill = player.healthFill;
-
-      const enemy = this.drawMossling();
-      this.enemyContainer = enemy.container;
-      this.enemyHealthFill = enemy.healthFill;
 
       this.statusText = this.add.text(WORLD_WIDTH / 2, 28, '', {
         color: '#fff8df',
@@ -51,8 +53,7 @@ export class BattleScene extends Phaser.Scene {
         strokeThickness: 5,
       }).setOrigin(0.5).setDepth(20);
 
-      const snapshot = this.engine.getSnapshot();
-      this.renderSnapshot(snapshot);
+      this.renderCampaign(snapshot);
       this.publishStatus(snapshot);
     } catch (error) {
       this.fail(error);
@@ -63,9 +64,35 @@ export class BattleScene extends Phaser.Scene {
     if (this.failed) return;
 
     try {
-      paused ? this.engine.pause() : this.engine.resume();
-      const snapshot = this.engine.getSnapshot();
-      this.renderSnapshot(snapshot);
+      paused ? this.campaign.pause() : this.campaign.resume();
+      const snapshot = this.campaign.getSnapshot();
+      this.renderCampaign(snapshot);
+      this.publishStatus(snapshot);
+    } catch (error) {
+      this.fail(error);
+    }
+  }
+
+  startBreakthrough(): void {
+    if (this.failed) return;
+
+    try {
+      this.campaign.startBreakthrough();
+      const snapshot = this.campaign.getSnapshot();
+      this.renderCampaign(snapshot);
+      this.publishStatus(snapshot);
+    } catch (error) {
+      this.fail(error);
+    }
+  }
+
+  startBoss(): void {
+    if (this.failed) return;
+
+    try {
+      this.campaign.startBoss();
+      const snapshot = this.campaign.getSnapshot();
+      this.renderCampaign(snapshot);
       this.publishStatus(snapshot);
     } catch (error) {
       this.fail(error);
@@ -77,10 +104,14 @@ export class BattleScene extends Phaser.Scene {
 
     try {
       const contributionMs = Math.min(delta, COMBAT_BALANCE.maxFrameContributionMs);
-      const events = this.engine.advance(contributionMs);
-      const snapshot = this.engine.getSnapshot();
+      const events = this.campaign.advance(contributionMs);
+      const snapshot = this.campaign.getSnapshot();
 
-      this.renderSnapshot(snapshot);
+      const deferEnemyRedraw = events.some(
+        (event) => event.type === 'death' && event.actor === 'enemy'
+          && snapshot.encounter?.visual.name !== this.renderedVisualName,
+      );
+      this.renderCampaign(snapshot, deferEnemyRedraw);
       for (const event of events) this.animateEvent(event);
 
       this.statusElapsedMs += Math.max(0, delta);
@@ -93,12 +124,15 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  private drawBackdrop(): void {
+  private drawBackdrop(backgroundColor: number): void {
+    this.chapterBackdrop = this.add.graphics().setDepth(-1);
+    this.drawChapterBackdrop(backgroundColor);
+
     const sky = this.add.graphics();
     const skyColors = [0x94cfff, 0xa9d9ff, 0xbde3ff, 0xd1ecff, 0xe4f2ff, 0xf2f6ec];
     const bandHeight = WORLD_HEIGHT / skyColors.length;
     skyColors.forEach((color, index) => {
-      sky.fillStyle(color, 1);
+      sky.fillStyle(color, 0.72);
       sky.fillRect(0, index * bandHeight, WORLD_WIDTH, bandHeight + 1);
     });
 
@@ -122,6 +156,12 @@ export class BattleScene extends Phaser.Scene {
     ground.fillRect(0, 441, WORLD_WIDTH, 9);
     ground.fillStyle(0xf4d69a, 0.2);
     for (let x = 18; x < WORLD_WIDTH; x += 54) ground.fillCircle(x, 478 + (x % 3) * 12, 2);
+  }
+
+  private drawChapterBackdrop(backgroundColor: number): void {
+    if (!this.chapterBackdrop) return;
+    this.chapterBackdrop.clear();
+    this.chapterBackdrop.fillStyle(backgroundColor, 1).fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
   }
 
   private drawCloud(x: number, y: number, scale: number): void {
@@ -198,24 +238,24 @@ export class BattleScene extends Phaser.Scene {
     return { container, healthFill };
   }
 
-  private drawMossling(): { container: Phaser.GameObjects.Container; healthFill: Phaser.GameObjects.Graphics } {
+  private drawEnemy(visual: EncounterVisual): { container: Phaser.GameObjects.Container; healthFill: Phaser.GameObjects.Graphics } {
     const shadow = this.add.graphics();
     shadow.fillStyle(0x183829, 0.38).fillEllipse(0, 18, 118, 25);
 
     const figure = this.add.graphics();
-    figure.fillStyle(0x386c42, 1).fillEllipse(0, -45, 116, 118);
-    figure.fillStyle(0x4f8d50, 1).fillCircle(-33, -78, 34).fillCircle(35, -76, 35);
-    figure.fillStyle(0x7daf5f, 1).fillCircle(0, -54, 42);
+    figure.fillStyle(visual.color, 1).fillEllipse(0, -45, 116, 118);
+    figure.fillStyle(visual.accentColor, 1).fillCircle(-33, -78, 34).fillCircle(35, -76, 35);
+    figure.fillStyle(visual.accentColor, 0.72).fillCircle(0, -54, 42);
     figure.fillStyle(0xe8e7c8, 1).fillCircle(-17, -61, 11).fillCircle(18, -61, 11);
     figure.fillStyle(0x203529, 1).fillCircle(-14, -60, 5).fillCircle(15, -60, 5);
     figure.fillStyle(0x234532, 1).fillRoundedRect(-19, -35, 38, 7, 3);
-    figure.fillStyle(0x6fa859, 1).fillTriangle(-40, -102, -25, -139, -10, -101);
+    figure.fillStyle(visual.color, 1).fillTriangle(-40, -102, -25, -139, -10, -101);
     figure.fillTriangle(13, -102, 34, -141, 45, -96);
-    figure.fillStyle(0x91c46c, 1).fillEllipse(-29, -123, 22, 40).fillEllipse(31, -124, 22, 42);
-    figure.fillStyle(0x335f3d, 1).fillRoundedRect(-46, -6, 32, 25, 10);
+    figure.fillStyle(visual.accentColor, 1).fillEllipse(-29, -123, 22, 40).fillEllipse(31, -124, 22, 42);
+    figure.fillStyle(visual.color, 0.82).fillRoundedRect(-46, -6, 32, 25, 10);
     figure.fillRoundedRect(15, -6, 32, 25, 10);
 
-    const label = this.add.text(0, -186, COMBAT_BALANCE.enemy.name, {
+    const label = this.add.text(0, -186, visual.name, {
       color: '#e9ffd8',
       fontFamily: 'Georgia, serif',
       fontSize: '18px',
@@ -235,9 +275,46 @@ export class BattleScene extends Phaser.Scene {
       label,
       healthBack,
       healthFill,
-    ]).setDepth(10);
+    ]).setDepth(10).setScale(visual.scale);
 
     return { container, healthFill };
+  }
+
+  private redrawEnemy(visual: EncounterVisual): void {
+    this.enemyHealthFill?.destroy();
+    this.enemyContainer?.destroy();
+    const enemy = this.drawEnemy(visual);
+    this.enemyContainer = enemy.container;
+    this.enemyHealthFill = enemy.healthFill;
+    this.renderedVisualName = visual.name;
+  }
+
+  private renderCampaign(snapshot: CampaignSnapshot, deferEnemyRedraw = false): void {
+    if (this.renderedChapterNumber !== snapshot.chapter.number) {
+      this.drawChapterBackdrop(snapshot.chapter.backgroundColor);
+      this.renderedChapterNumber = snapshot.chapter.number;
+    }
+
+    const visual = snapshot.encounter?.visual;
+    if (visual && this.renderedVisualName !== visual.name) {
+      if (deferEnemyRedraw || this.pendingEnemyVisual?.name === visual.name) {
+        this.pendingEnemyVisual = visual;
+      } else {
+        this.redrawEnemy(visual);
+      }
+    }
+
+    if (snapshot.combat) {
+      this.renderSnapshot(snapshot.combat);
+      return;
+    }
+
+    this.enemyHealthFill?.clear();
+    if (this.statusText) {
+      this.statusText.setText(
+        snapshot.mode === 'campaign-complete' ? 'Lightrest Summit restored' : 'Preparing the next encounter',
+      );
+    }
   }
 
   private renderSnapshot(snapshot: CombatSnapshot): void {
@@ -320,6 +397,14 @@ export class BattleScene extends Phaser.Scene {
           y: position.y + 18,
           duration: 320,
           ease: 'Quad.In',
+          onComplete: () => {
+            if (event.actor !== 'enemy' || !this.pendingEnemyVisual || this.failed) return;
+            const visual = this.pendingEnemyVisual;
+            this.pendingEnemyVisual = undefined;
+            this.redrawEnemy(visual);
+            const snapshot = this.campaign.getSnapshot();
+            if (snapshot.combat) this.renderSnapshot(snapshot.combat);
+          },
         });
         return;
       }
@@ -354,8 +439,8 @@ export class BattleScene extends Phaser.Scene {
     return actor === 'player' ? PLAYER_POSITION : ENEMY_POSITION;
   }
 
-  private publishStatus(snapshot: CombatSnapshot): void {
-    this.onStatus({ snapshot, state: snapshot.paused ? 'paused' : 'running' });
+  private publishStatus(snapshot: CampaignSnapshot): void {
+    this.onStatus({ snapshot, state: snapshot.combat?.paused ? 'paused' : 'running' });
   }
 
   private fail(error: unknown): void {

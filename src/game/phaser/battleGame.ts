@@ -1,14 +1,16 @@
 import Phaser from 'phaser';
-import type { CombatSnapshot } from '../types';
+import type { CampaignSnapshot } from '../campaign/campaignTypes';
 import { BattleScene } from './BattleScene';
 
 export interface BattleController {
   setPaused(paused: boolean): void;
+  startBreakthrough(): void;
+  startBoss(): void;
   destroy(): void;
 }
 
 export interface BattleStatus {
-  snapshot: CombatSnapshot;
+  snapshot: CampaignSnapshot;
   state: 'running' | 'paused';
 }
 
@@ -41,6 +43,14 @@ export function createBattleGame({
       if (destroyed) return;
       battleScene.setCombatPaused(paused);
       paused ? game.scene.pause('battle') : game.scene.resume('battle');
+    },
+    startBreakthrough() {
+      if (destroyed) return;
+      battleScene.startBreakthrough();
+    },
+    startBoss() {
+      if (destroyed) return;
+      battleScene.startBoss();
     },
     destroy() {
       if (destroyed) return;

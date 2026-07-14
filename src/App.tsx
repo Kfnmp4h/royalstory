@@ -53,6 +53,7 @@ export function App() {
         ? 'Paused'
         : 'Starting';
   const snapshot = status?.snapshot;
+  const combat = snapshot?.combat;
 
   return (
     <main className="app-shell">
@@ -72,15 +73,15 @@ export function App() {
         <dl>
           <div>
             <dt>Active runtime</dt>
-            <dd>{formatRuntime(snapshot?.activeRuntimeMs ?? 0)}</dd>
+            <dd>{formatRuntime(combat?.activeRuntimeMs ?? 0)}</dd>
           </div>
           <div>
             <dt>Total attacks</dt>
-            <dd>{snapshot?.totalAttacks ?? 0}</dd>
+            <dd>{combat?.totalAttacks ?? 0}</dd>
           </div>
           <div>
             <dt>Defeated Mosslings</dt>
-            <dd>{snapshot?.defeatedEnemies ?? 0}</dd>
+            <dd>{combat?.defeatedEnemies ?? 0}</dd>
           </div>
         </dl>
         {error ? <p role="alert">{error.message}</p> : null}

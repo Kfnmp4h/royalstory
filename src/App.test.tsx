@@ -2,6 +2,7 @@ import { act, render, screen } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BattleStatus } from './game/phaser/battleGame';
+import { getChapter } from './game/campaign/campaignDefinitions';
 
 const battleGame = vi.hoisted(() => ({
   createBattleGame: vi.fn(),
@@ -24,29 +25,35 @@ interface GameCallbacks {
 const runningStatus: BattleStatus = {
   state: 'running',
   snapshot: {
-    phase: 'fighting',
-    paused: false,
-    activeRuntimeMs: 65_000,
-    totalAttacks: 12,
-    defeatedEnemies: 3,
-    recoveryRemainingMs: 0,
-    player: {
-      id: 'player',
-      name: 'Knight',
-      maxHp: 100,
-      hp: 80,
-      damage: 10,
-      attackIntervalMs: 1_000,
-      alive: true,
-    },
-    enemy: {
-      id: 'enemy',
-      name: 'Mossling',
-      maxHp: 40,
-      hp: 20,
-      damage: 5,
-      attackIntervalMs: 1_500,
-      alive: true,
+    mode: 'farming',
+    chapter: getChapter(1),
+    unlockedChapter: 1,
+    encounter: getChapter(1).farming,
+    combat: {
+      phase: 'fighting',
+      paused: false,
+      activeRuntimeMs: 65_000,
+      totalAttacks: 12,
+      defeatedEnemies: 3,
+      recoveryRemainingMs: 0,
+      player: {
+        id: 'player',
+        name: 'Knight',
+        maxHp: 100,
+        hp: 80,
+        damage: 10,
+        attackIntervalMs: 1_000,
+        alive: true,
+      },
+      enemy: {
+        id: 'enemy',
+        name: 'Mossling',
+        maxHp: 40,
+        hp: 20,
+        damage: 5,
+        attackIntervalMs: 1_500,
+        alive: true,
+      },
     },
   },
 };
@@ -135,7 +142,10 @@ describe('App', () => {
       lifetimes[0]?.onStatus({
         ...runningStatus,
         state: 'paused',
-        snapshot: { ...runningStatus.snapshot, paused: true },
+        snapshot: {
+          ...runningStatus.snapshot,
+          combat: { ...runningStatus.snapshot.combat!, paused: true },
+        },
       });
       lifetimes[0]?.onError(new Error('stale engine failure'));
     });
@@ -153,7 +163,10 @@ describe('App', () => {
     act(() => callbacks.onStatus({
       ...runningStatus,
       state: 'paused',
-      snapshot: { ...runningStatus.snapshot, paused: true },
+      snapshot: {
+        ...runningStatus.snapshot,
+        combat: { ...runningStatus.snapshot.combat!, paused: true },
+      },
     }));
 
     expect(screen.getByText('Paused')).toBeInTheDocument();
