@@ -38,6 +38,9 @@ describe('createCampaignController', () => {
 
   it('rejects malformed campaign definitions before a battle starts', () => {
     expect(() => createCampaignController([])).toThrow('Campaign must contain 36 ordered chapters');
+    expect(() => createCampaignController(new Array<ChapterDefinition>(36))).toThrow(
+      new Error('Campaign must contain 36 ordered chapters'),
+    );
     const missingBoss = CHAPTERS.map((chapter) => ({ ...chapter }));
     missingBoss[0] = { ...missingBoss[0], boss: null as unknown as ChapterDefinition['boss'] };
     expect(() => createCampaignController(missingBoss)).toThrow('Campaign must contain 36 ordered chapters');
@@ -52,6 +55,19 @@ describe('createCampaignController', () => {
     expect(ready).toMatchObject({ mode: 'boss-ready', encounter: { kind: 'breakthrough' } });
     expect(campaign.advance(60_000)).toEqual([]);
     expect(campaign.getSnapshot()).toEqual(ready);
+  });
+
+  it('keeps farming after an enemy death and resumes the encounter normally', () => {
+    const campaign = createCampaignController(withEncounterBalance('farming', {
+      ...CHAPTERS[0].farming.balance,
+      player: { ...CHAPTERS[0].farming.balance.player, damage: 10_000, attackIntervalMs: 100 },
+    }));
+
+    expect(campaign.advance(100)).toContainEqual({ type: 'death', actor: 'enemy' });
+    expect(campaign.getSnapshot()).toMatchObject({ mode: 'farming', combat: { phase: 'enemy-defeated' } });
+    expect(campaign.advance(1_200)).toContainEqual({ type: 'respawn', actor: 'enemy' });
+    expect(campaign.getSnapshot()).toMatchObject({ mode: 'farming', combat: { phase: 'fighting' } });
+    expect(campaign.advance(100)).toContainEqual({ type: 'death', actor: 'enemy' });
   });
 
   it('returns a lost breakthrough to farming in the same chapter', () => {
@@ -99,6 +115,20 @@ describe('createCampaignController', () => {
       chapter: { number: 1 },
       encounter: { kind: 'farming' },
     });
+  });
+
+  it('keeps both start commands idempotent while a boss is active', () => {
+    const campaign = createCampaignController();
+    campaign.startBreakthrough();
+    advanceUntil(campaign, () => campaign.getSnapshot().mode === 'boss-ready');
+    campaign.startBoss();
+    const boss = campaign.getSnapshot();
+
+    campaign.startBreakthrough();
+    campaign.startBoss();
+
+    expect(campaign.getSnapshot()).toEqual(boss);
+    expect(campaign.getSnapshot().mode).toBe('boss');
   });
 
   it('completes after the final boss and ignores future commands and advancement', () => {

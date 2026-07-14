@@ -11,15 +11,21 @@ import type {
 
 const activeModes: ReadonlySet<CampaignMode> = new Set(['farming', 'breakthrough', 'boss']);
 
-const hasOrderedEncounters = (chapters: readonly ChapterDefinition[]): boolean => (
-  chapters.length === 36
-  && chapters.every((chapter, index) => (
-    chapter?.number === index + 1
-    && chapter.farming != null
-    && chapter.breakthrough != null
-    && chapter.boss != null
-  ))
-);
+const hasOrderedEncounters = (chapters: readonly ChapterDefinition[]): boolean => {
+  if (chapters.length !== 36) return false;
+
+  for (let index = 0; index < 36; index += 1) {
+    const chapter = chapters[index];
+    if (
+      chapter?.number !== index + 1
+      || chapter.farming == null
+      || chapter.breakthrough == null
+      || chapter.boss == null
+    ) return false;
+  }
+
+  return true;
+};
 
 export const createCampaignController = (
   chapters: readonly ChapterDefinition[] = CHAPTERS,
