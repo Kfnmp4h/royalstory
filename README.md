@@ -1,6 +1,6 @@
 # RoyalStory Combat Sandbox
 
-RoyalStory Milestone 1 is a local, responsive combat sandbox that proves the automatic battle loop, recovery rules, and browser visibility handling. React provides the page and diagnostics, Phaser draws the battle scene, and a pure TypeScript engine owns combat state.
+RoyalStory Milestone 2 is a local, responsive campaign sandbox. React provides the page and campaign controls, Phaser draws the battle scene, and a pure TypeScript engine owns combat state.
 
 ## Requirements
 
@@ -24,16 +24,15 @@ pnpm typecheck
 pnpm build
 ```
 
-## Milestone 1 features
+## Milestone 2 features
 
-- Responsive side-view battle scene with Ari and Mossling.
-- Automatic attacks, health changes, damage feedback, death, enemy replacement, and player resurrection.
-- Page Visibility API integration that pauses hidden-tab combat without granting offline progress.
-- Live running, paused, runtime, attack, defeat, and error diagnostics.
-- Deterministic unit, integration, lifecycle, and ten-minute simulation coverage.
+- 36 original chapters, each with a farming encounter, a breakthrough challenge, and a boss challenge.
+- Progress from farming through breakthrough and boss encounters to unlock the next chapter.
+- Original code-drawn visuals for the campaign and combat scene; no external game assets are used.
+- The deterministic test profile exists only in memory. Reloading resets it to the first chapter.
 
-## Milestone 1 boundaries
+## Milestone 2 boundaries
 
-This milestone intentionally excludes stages, progression, skills, equipment, persistent settings or saves, backend services, accounts, and offline rewards. It does not include character creation, imported game assets, or later-milestone systems.
+This milestone has no persistent storage: it does not provide saves, accounts, online syncing, XP, rewards, or offline progress. It also does not include skills, equipment, character creation, imported game assets, or later-milestone systems.
 
-All current visuals are original, code-drawn placeholders.
+All visuals are original and code-drawn.

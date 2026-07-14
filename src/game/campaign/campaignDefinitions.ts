@@ -40,7 +40,7 @@ export function createEncounterBalance(chapter: number, kind: EncounterKind): Co
     player: { ...COMBAT_BALANCE.player },
     enemy: {
       ...COMBAT_BALANCE.enemy,
-      maxHp: 72 + chapter * 6 * multiplier,
+      maxHp: 72 + chapter * 3 * multiplier,
       damage: 2 + Math.floor(chapter / 12),
       attackIntervalMs: 1_300,
     },
