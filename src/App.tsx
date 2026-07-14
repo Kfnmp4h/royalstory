@@ -83,7 +83,7 @@ export function App() {
   return (
     <main className="app-shell">
       <header className="hero-header">
-        <p className="eyebrow">Milestone 1 · Combat Sandbox</p>
+        <p className="eyebrow">Milestone 2 · Campaign Sandbox</p>
         <h1>RoyalStory</h1>
       </header>
       <section className="campaign-panel" aria-label="Campaign progress">

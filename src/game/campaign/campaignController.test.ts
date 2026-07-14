@@ -46,6 +46,38 @@ describe('createCampaignController', () => {
     expect(() => createCampaignController(missingBoss)).toThrow('Campaign must contain 36 ordered chapters');
   });
 
+  it('rejects malformed encounter definitions before a battle starts', () => {
+    const wrongEncounterKind = CHAPTERS.map((chapter) => ({ ...chapter }));
+    wrongEncounterKind[0] = {
+      ...wrongEncounterKind[0],
+      farming: { ...wrongEncounterKind[0].farming, kind: 'boss' },
+    };
+
+    const missingVisual = CHAPTERS.map((chapter) => ({ ...chapter }));
+    missingVisual[0] = {
+      ...missingVisual[0],
+      breakthrough: { ...missingVisual[0].breakthrough, visual: undefined as unknown as ChapterDefinition['breakthrough']['visual'] },
+    };
+
+    const malformedBalance = CHAPTERS.map((chapter) => ({ ...chapter }));
+    malformedBalance[0] = {
+      ...malformedBalance[0],
+      boss: {
+        ...malformedBalance[0].boss,
+        balance: {
+          ...malformedBalance[0].boss.balance,
+          enemy: { ...malformedBalance[0].boss.balance.enemy, maxHp: Number.NaN },
+        },
+      },
+    };
+
+    for (const invalidCampaign of [wrongEncounterKind, missingVisual, malformedBalance]) {
+      expect(() => createCampaignController(invalidCampaign)).toThrow(
+        new Error('Campaign must contain 36 ordered chapters'),
+      );
+    }
+  });
+
   it('moves a won breakthrough to boss-ready without forwarding further combat', () => {
     const campaign = createCampaignController();
     campaign.startBreakthrough();

@@ -401,7 +401,12 @@ export class BattleScene extends Phaser.Scene {
           duration: 320,
           ease: 'Quad.In',
           onComplete: () => {
-            if (event.actor !== 'enemy') return;
+            if (event.actor !== 'enemy') {
+              if (this.campaign.getSnapshot().combat?.player.alive) {
+                this.animateEvent({ type: 'respawn', actor: 'player' });
+              }
+              return;
+            }
             this.enemyDeathFeedbackActive = false;
             if (!this.pendingEnemyVisual || this.failed) return;
             const visual = this.pendingEnemyVisual;

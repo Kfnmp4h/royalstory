@@ -291,6 +291,82 @@ describe('createBattleGame', () => {
     expect(redrawEnemy).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'Lantern Marsh Sprig' }));
   });
 
+  it.each(['breakthrough', 'boss'] as const)('restores Ari visibly after a lost %s replaces combat with farming', (lostEncounter) => {
+    const chapters = CHAPTERS.map((chapter) => ({
+      ...chapter,
+      breakthrough: lostEncounter === 'boss'
+        ? {
+          ...chapter.breakthrough,
+          balance: {
+            ...chapter.breakthrough.balance,
+            player: { ...chapter.breakthrough.balance.player, damage: 10_000, attackIntervalMs: 100 },
+          },
+        }
+        : {
+          ...chapter.breakthrough,
+          balance: {
+            ...chapter.breakthrough.balance,
+            enemy: { ...chapter.breakthrough.balance.enemy, damage: 120, attackIntervalMs: 100 },
+          },
+        },
+      boss: lostEncounter === 'boss'
+        ? {
+          ...chapter.boss,
+          balance: {
+            ...chapter.boss.balance,
+            enemy: { ...chapter.boss.balance.enemy, damage: 120, attackIntervalMs: 100 },
+          },
+        }
+        : chapter.boss,
+    }));
+    const campaign = createCampaignController(chapters);
+    campaign.startBreakthrough();
+    if (lostEncounter === 'boss') {
+      campaign.advance(100);
+      campaign.startBoss();
+    }
+
+    const scene = new BattleScene(vi.fn(), vi.fn());
+    const addTween = vi.fn();
+    const player = {
+      x: 270,
+      y: 414,
+      setPosition: vi.fn(),
+      setAlpha: vi.fn(),
+      setScale: vi.fn(),
+    };
+    player.setPosition.mockReturnValue(player);
+    player.setAlpha.mockReturnValue(player);
+    player.setScale.mockReturnValue(player);
+    Object.assign(scene, {
+      campaign,
+      playerContainer: player,
+      renderCampaign: vi.fn(),
+      tweens: { add: addTween, killTweensOf: vi.fn() },
+      ready: true,
+    });
+
+    scene.update(0, 100);
+
+    expect(campaign.getSnapshot()).toMatchObject({
+      mode: 'farming',
+      combat: { player: { alive: true } },
+    });
+    const deathTween = addTween.mock.calls
+      .map(([config]) => config as { targets: unknown; duration: number; onComplete?: () => void })
+      .find((config) => config.targets === player && config.duration === 320);
+    expect(deathTween?.onComplete).toBeTypeOf('function');
+    deathTween?.onComplete?.();
+
+    expect(player.setAlpha).toHaveBeenLastCalledWith(0);
+    expect(addTween.mock.calls.map(([config]) => config)).toContainEqual(expect.objectContaining({
+      targets: player,
+      alpha: 1,
+      scaleX: 1,
+      scaleY: 1,
+    }));
+  });
+
   it('defers a manual breakthrough visual change while farming death feedback plays', () => {
     const scene = new BattleScene(vi.fn(), vi.fn());
     const farmingSnapshot = createCampaignController().getSnapshot();

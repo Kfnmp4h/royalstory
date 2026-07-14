@@ -102,7 +102,7 @@ describe('App', () => {
   it('introduces the RoyalStory combat sandbox', () => {
     render(<App />);
     expect(screen.getByRole('heading', { name: 'RoyalStory' })).toBeInTheDocument();
-    expect(screen.getByText('Milestone 1 · Combat Sandbox')).toBeInTheDocument();
+    expect(screen.getByText('Milestone 2 · Campaign Sandbox')).toBeInTheDocument();
   });
 
   it('immediately displays Paused when initially hidden before the first battle status', () => {

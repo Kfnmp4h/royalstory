@@ -11,16 +11,65 @@ import type {
 
 const activeModes: ReadonlySet<CampaignMode> = new Set(['farming', 'breakthrough', 'boss']);
 
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  typeof value === 'object' && value !== null
+);
+
+const isNonEmptyString = (value: unknown): value is string => (
+  typeof value === 'string' && value.trim().length > 0
+);
+
+const isPositiveNumber = (value: unknown): value is number => (
+  typeof value === 'number' && Number.isFinite(value) && value > 0
+);
+
+const isColor = (value: unknown): value is number => (
+  typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 0xffffff
+);
+
+const hasCombatant = (value: unknown, id: 'player' | 'enemy'): boolean => (
+  isRecord(value)
+  && value.id === id
+  && isNonEmptyString(value.name)
+  && isPositiveNumber(value.maxHp)
+  && isPositiveNumber(value.damage)
+  && isPositiveNumber(value.attackIntervalMs)
+);
+
+const hasBalance = (value: unknown): boolean => (
+  isRecord(value)
+  && isPositiveNumber(value.sliceMs)
+  && isPositiveNumber(value.maxFrameContributionMs)
+  && isPositiveNumber(value.enemyRespawnMs)
+  && isPositiveNumber(value.playerRespawnMs)
+  && hasCombatant(value.player, 'player')
+  && hasCombatant(value.enemy, 'enemy')
+);
+
+const hasEncounter = (value: unknown, kind: EncounterDefinition['kind']): boolean => (
+  isRecord(value)
+  && value.kind === kind
+  && isRecord(value.visual)
+  && isNonEmptyString(value.visual.name)
+  && isColor(value.visual.color)
+  && isColor(value.visual.accentColor)
+  && isPositiveNumber(value.visual.scale)
+  && hasBalance(value.balance)
+);
+
 const hasOrderedEncounters = (chapters: readonly ChapterDefinition[]): boolean => {
-  if (chapters.length !== 36) return false;
+  if (!Array.isArray(chapters) || chapters.length !== 36) return false;
 
   for (let index = 0; index < 36; index += 1) {
     const chapter = chapters[index];
     if (
-      chapter?.number !== index + 1
-      || chapter.farming == null
-      || chapter.breakthrough == null
-      || chapter.boss == null
+      !isRecord(chapter)
+      || chapter.number !== index + 1
+      || !isNonEmptyString(chapter.name)
+      || !isColor(chapter.backgroundColor)
+      || !hasEncounter(chapter.farming, 'farming')
+      || !hasEncounter(chapter.breakthrough, 'breakthrough')
+      || !hasEncounter(chapter.boss, 'boss')
     ) return false;
   }
 
