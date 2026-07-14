@@ -65,6 +65,11 @@ Scenen växlar egen bakgrundston och fiendesiluett mellan kapitlen. En boss är 
 - Ogiltiga kommandon ändrar aldrig state.
 - Ett stridsfel fortsätter använda befintlig felrapportering i React; senast giltiga kampanjsnapshot behålls i minnet.
 - Ingen lokal eller serverbaserad sparning införs. En omladdning återställer därför testprofilen till kapitel 1.
+- Spelet får inte använda `localStorage`, `sessionStorage`, `IndexedDB`, cookies eller filsystemet för att bevara kampanjdata.
+
+## Leverans
+
+Arbetssteg som har passerat relevanta automatiserade tester, typkontroll och produktionsbygge versionshanteras som Git-commits och pushas till projektets GitHub-repository `Kfnmp4h/royalstory`. GitHub är en kodvärd för projektet, inte en sparlösning för speltillstånd.
 
 ## Testning och acceptans
 
