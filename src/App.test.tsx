@@ -1,13 +1,16 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BattleStatus } from './game/phaser/battleGame';
 import { getChapter } from './game/campaign/campaignDefinitions';
+import appSource from './App?raw';
 
 const battleGame = vi.hoisted(() => ({
   createBattleGame: vi.fn(),
   destroy: vi.fn(),
   setPaused: vi.fn(),
+  startBreakthrough: vi.fn(),
+  startBoss: vi.fn(),
 }));
 
 vi.mock('./game/phaser/battleGame', () => ({
@@ -58,6 +61,26 @@ const runningStatus: BattleStatus = {
   },
 };
 
+const bossReadyStatus: BattleStatus = {
+  ...runningStatus,
+  snapshot: {
+    ...runningStatus.snapshot,
+    mode: 'boss-ready',
+    encounter: getChapter(1).breakthrough,
+  },
+};
+
+const campaignCompleteStatus: BattleStatus = {
+  state: 'running',
+  snapshot: {
+    mode: 'campaign-complete',
+    chapter: getChapter(36),
+    unlockedChapter: 36,
+    encounter: null,
+    combat: null,
+  },
+};
+
 describe('App', () => {
   let callbacks: GameCallbacks;
 
@@ -70,6 +93,8 @@ describe('App', () => {
       return {
         destroy: battleGame.destroy,
         setPaused: battleGame.setPaused,
+        startBreakthrough: battleGame.startBreakthrough,
+        startBoss: battleGame.startBoss,
       };
     });
   });
@@ -87,6 +112,8 @@ describe('App', () => {
       return {
         destroy: battleGame.destroy,
         setPaused: battleGame.setPaused,
+        startBreakthrough: battleGame.startBreakthrough,
+        startBoss: battleGame.startBoss,
       };
     });
 
@@ -117,7 +144,7 @@ describe('App', () => {
     expect(battleRegion).toContainElement(screen.getByLabelText('RoyalStory automatic battle'));
     expect(diagnosticsRegion).toContainElement(screen.getByText('Active runtime'));
     expect(diagnosticsRegion).toContainElement(screen.getByText('Total attacks'));
-    expect(diagnosticsRegion).toContainElement(screen.getByText('Defeated Mosslings'));
+    expect(diagnosticsRegion).toContainElement(screen.getByText('Defeated enemies'));
   });
 
   it('ignores callbacks from a cleaned-up StrictMode battle lifetime', () => {
@@ -128,6 +155,8 @@ describe('App', () => {
       return {
         destroy: lifetimes.length === 1 ? firstDestroy : battleGame.destroy,
         setPaused: battleGame.setPaused,
+        startBreakthrough: battleGame.startBreakthrough,
+        startBoss: battleGame.startBoss,
       };
     });
 
@@ -171,6 +200,69 @@ describe('App', () => {
 
     expect(screen.getByText('Paused')).toBeInTheDocument();
     expect(battleGame.createBattleGame).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows chapter farming and starts a breakthrough from the campaign control', () => {
+    render(<App />);
+
+    expect(screen.getByText('Chapter 1 / 36')).toBeInTheDocument();
+    expect(screen.getByText('Whisperwood')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Start breakthrough' }));
+
+    expect(battleGame.startBreakthrough).toHaveBeenCalledOnce();
+  });
+
+  it('shows the boss action only after a breakthrough win', () => {
+    render(<App />);
+
+    act(() => callbacks.onStatus(bossReadyStatus));
+
+    const bossButton = screen.getByRole('button', { name: 'Challenge boss' });
+    expect(bossButton).toBeEnabled();
+    expect(screen.queryByRole('button', { name: 'Start breakthrough' })).not.toBeInTheDocument();
+
+    fireEvent.click(bossButton);
+    expect(battleGame.startBoss).toHaveBeenCalledOnce();
+  });
+
+  it('shows no campaign action during breakthrough and boss battles', () => {
+    render(<App />);
+
+    act(() => callbacks.onStatus({
+      ...runningStatus,
+      snapshot: { ...runningStatus.snapshot, mode: 'breakthrough', encounter: getChapter(1).breakthrough },
+    }));
+    expect(screen.getByText('Breakthrough')).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+
+    act(() => callbacks.onStatus({
+      ...runningStatus,
+      snapshot: { ...runningStatus.snapshot, mode: 'boss', encounter: getChapter(1).boss },
+    }));
+    expect(screen.getByText('Boss battle')).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('shows no campaign action after completing the campaign', () => {
+    render(<App />);
+
+    act(() => callbacks.onStatus(campaignCompleteStatus));
+
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.getByText('Campaign complete')).toBeInTheDocument();
+  });
+
+  it('does not create a second game for campaign status updates', () => {
+    render(<App />);
+
+    act(() => callbacks.onStatus(bossReadyStatus));
+    act(() => callbacks.onStatus(campaignCompleteStatus));
+
+    expect(battleGame.createBattleGame).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not include browser persistence APIs', () => {
+    expect(appSource).not.toMatch(/localStorage|sessionStorage|IndexedDB|document\\.cookie/);
   });
 
   it('pauses the controller and displayed status when the document becomes hidden', () => {

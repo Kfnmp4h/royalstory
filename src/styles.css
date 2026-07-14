@@ -73,6 +73,69 @@ h1 {
   text-shadow: 0 3px 18px rgb(0 0 0 / 45%);
 }
 
+.campaign-panel {
+  display: grid;
+  width: min(100%, 70rem);
+  min-width: 0;
+  margin-inline: auto;
+  gap: 7px;
+  padding: clamp(14px, 3vw, 22px);
+  border: 2px solid #ffd66b;
+  border-radius: 14px;
+  color: #fffaf0;
+  background: #101a33;
+  box-shadow: 0 12px 30px rgb(0 0 0 / 32%);
+}
+
+.campaign-panel p,
+.campaign-panel h2 {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.campaign-chapter,
+.campaign-status {
+  color: #ffe08a;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.campaign-panel h2 {
+  color: #ffffff;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.45rem, 5vw, 2rem);
+}
+
+.campaign-instruction {
+  color: #e3eaff;
+  line-height: 1.45;
+}
+
+button {
+  min-height: 44px;
+}
+
+.campaign-panel button {
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 5px;
+  padding: 10px 16px;
+  border: 2px solid #fff1bd;
+  border-radius: 10px;
+  color: #101a33;
+  background: #ffd66b;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.campaign-panel button:hover {
+  background: #fff1bd;
+}
+
 .battle-card {
   width: min(100%, max(18rem, calc((100dvh - 18rem) * 16 / 9)));
   min-height: min(10rem, 45dvh);
@@ -156,6 +219,10 @@ h1 {
 }
 
 @media (max-width: 639px) {
+  .campaign-panel button {
+    width: 100%;
+  }
+
   .diagnostics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

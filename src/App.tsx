@@ -1,7 +1,31 @@
 import { useEffect, useRef, useState } from 'react';
 import { createBattleGame } from './game/phaser/battleGame';
 import type { BattleController, BattleStatus } from './game/phaser/battleGame';
+import type { CampaignMode } from './game/campaign/campaignTypes';
 import { subscribeToVisibility } from './game/visibilityController';
+
+const campaignMessages: Record<CampaignMode, { status: string; instruction: string }> = {
+  farming: {
+    status: 'Farming',
+    instruction: 'Defeat enemies to prepare for a breakthrough.',
+  },
+  breakthrough: {
+    status: 'Breakthrough',
+    instruction: 'Defeat the sentinel to challenge the chapter boss.',
+  },
+  'boss-ready': {
+    status: 'Boss ready',
+    instruction: 'The chapter boss is ready to be challenged.',
+  },
+  boss: {
+    status: 'Boss battle',
+    instruction: 'Defeat the boss to unlock the next chapter.',
+  },
+  'campaign-complete': {
+    status: 'Campaign complete',
+    instruction: 'Lightrest Summit is restored.',
+  },
+};
 
 function formatRuntime(runtimeMs: number): string {
   const totalSeconds = Math.floor(runtimeMs / 1_000);
@@ -54,6 +78,7 @@ export function App() {
         : 'Starting';
   const snapshot = status?.snapshot;
   const combat = snapshot?.combat;
+  const campaignMessage = snapshot ? campaignMessages[snapshot.mode] : null;
 
   return (
     <main className="app-shell">
@@ -61,6 +86,26 @@ export function App() {
         <p className="eyebrow">Milestone 1 · Combat Sandbox</p>
         <h1>RoyalStory</h1>
       </header>
+      <section className="campaign-panel" aria-label="Campaign progress">
+        {snapshot && campaignMessage ? (
+          <>
+            <p className="campaign-chapter">Chapter {snapshot.chapter.number} / 36</p>
+            <h2>{snapshot.chapter.name}</h2>
+            <p className="campaign-status">{campaignMessage.status}</p>
+            <p className="campaign-instruction">{campaignMessage.instruction}</p>
+            {snapshot.mode === 'farming' ? (
+              <button type="button" onClick={() => controllerRef.current?.startBreakthrough()}>
+                Start breakthrough
+              </button>
+            ) : null}
+            {snapshot.mode === 'boss-ready' ? (
+              <button type="button" onClick={() => controllerRef.current?.startBoss()}>
+                Challenge boss
+              </button>
+            ) : null}
+          </>
+        ) : <p>Loading campaign progress…</p>}
+      </section>
       <section className="battle-card" aria-label="Automatic battle">
         <div
           ref={hostRef}
@@ -80,7 +125,7 @@ export function App() {
             <dd>{combat?.totalAttacks ?? 0}</dd>
           </div>
           <div>
-            <dt>Defeated Mosslings</dt>
+            <dt>Defeated enemies</dt>
             <dd>{combat?.defeatedEnemies ?? 0}</dd>
           </div>
         </dl>
