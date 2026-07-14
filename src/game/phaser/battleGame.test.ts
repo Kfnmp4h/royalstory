@@ -47,7 +47,8 @@ vi.mock('phaser', () => {
 import { BattleScene } from './BattleScene';
 import { createBattleGame } from './battleGame';
 import { createCampaignController } from '../campaign/campaignController';
-import type { CampaignController } from '../campaign/campaignTypes';
+import { CHAPTERS } from '../campaign/campaignDefinitions';
+import type { CampaignController, CampaignSnapshot } from '../campaign/campaignTypes';
 
 describe('createBattleGame', () => {
   beforeEach(() => {
@@ -144,6 +145,22 @@ describe('createBattleGame', () => {
     expect(redrawEnemy).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'Whisperwood Sentinel' }));
   });
 
+  it('retains campaign commands without rendering or failing before scene creation', () => {
+    const onError = vi.fn();
+    const scene = new BattleScene(vi.fn(), onError);
+    const campaignScene = scene as unknown as {
+      campaign: CampaignController;
+    };
+
+    expect(() => scene.setCombatPaused(true)).not.toThrow();
+    expect(() => scene.startBreakthrough()).not.toThrow();
+    expect(() => scene.startBoss()).not.toThrow();
+
+    expect(phaserBoundary.graphics).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+    expect(campaignScene.campaign.getSnapshot()).toMatchObject({ mode: 'breakthrough' });
+  });
+
   it('renders the completion message exactly when the campaign has ended', () => {
     const scene = new BattleScene(vi.fn(), vi.fn());
     const campaignSnapshot = createCampaignController().getSnapshot();
@@ -165,6 +182,7 @@ describe('createBattleGame', () => {
         getSnapshot: vi.fn(() => completedSnapshot),
       } satisfies CampaignController,
       statusText: { setText },
+      ready: true,
     });
 
     (scene as unknown as {
@@ -173,6 +191,64 @@ describe('createBattleGame', () => {
     scene.update(0, 1_000);
 
     expect(advance).toHaveBeenCalledOnce();
+    expect(setText).toHaveBeenLastCalledWith('Lightrest Summit restored');
+  });
+
+  it('keeps the restored message through a real final-boss campaign transition', () => {
+    const instantVictoryChapters = CHAPTERS.map((chapter) => ({
+      ...chapter,
+      farming: {
+        ...chapter.farming,
+        balance: {
+          ...chapter.farming.balance,
+          player: { ...chapter.farming.balance.player, damage: 10_000, attackIntervalMs: 100 },
+        },
+      },
+      breakthrough: {
+        ...chapter.breakthrough,
+        balance: {
+          ...chapter.breakthrough.balance,
+          player: { ...chapter.breakthrough.balance.player, damage: 10_000, attackIntervalMs: 100 },
+        },
+      },
+      boss: {
+        ...chapter.boss,
+        balance: {
+          ...chapter.boss.balance,
+          player: { ...chapter.boss.balance.player, damage: 10_000, attackIntervalMs: 100 },
+        },
+      },
+    }));
+    const campaign = createCampaignController(instantVictoryChapters);
+    const advanceUntil = (predicate: () => boolean) => {
+      for (let tick = 0; tick < 20_000 && !predicate(); tick += 1) campaign.advance(100);
+      expect(predicate()).toBe(true);
+    };
+    for (let chapter = 1; chapter < 36; chapter += 1) {
+      campaign.startBreakthrough();
+      advanceUntil(() => campaign.getSnapshot().mode === 'boss-ready');
+      campaign.startBoss();
+      advanceUntil(() => campaign.getSnapshot().chapter.number === chapter + 1);
+    }
+    campaign.startBreakthrough();
+    advanceUntil(() => campaign.getSnapshot().mode === 'boss-ready');
+
+    const setText = vi.fn();
+    const scene = new BattleScene(vi.fn(), vi.fn());
+    const redrawEnemy = vi.spyOn(
+      scene as unknown as { redrawEnemy(visual: { name: string }): void; renderedVisualName?: string },
+      'redrawEnemy',
+    ).mockImplementation((visual) => {
+      (scene as unknown as { renderedVisualName?: string }).renderedVisualName = visual.name;
+    });
+    Object.assign(scene, { campaign, ready: true, statusText: { setText } });
+
+    scene.startBoss();
+    scene.update(0, 1_000);
+    scene.update(1_000, 1_000);
+
+    expect(redrawEnemy).toHaveBeenCalledWith(expect.objectContaining({ name: 'Lightrest Summit Warden' }));
+    expect(campaign.getSnapshot().mode).toBe('campaign-complete');
     expect(setText).toHaveBeenLastCalledWith('Lightrest Summit restored');
   });
 
@@ -204,6 +280,7 @@ describe('createBattleGame', () => {
       renderedVisualName: 'Whisperwood Warden',
       enemyContainer: { x: 690, y: 414 },
       tweens: { add: addTween, killTweensOf: vi.fn() },
+      ready: true,
     });
 
     scene.update(0, 16);
@@ -212,6 +289,96 @@ describe('createBattleGame', () => {
     const deathTween = addTween.mock.calls[0]?.[0] as { onComplete(): void };
     deathTween.onComplete();
     expect(redrawEnemy).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'Lantern Marsh Sprig' }));
+  });
+
+  it('defers a manual breakthrough visual change while farming death feedback plays', () => {
+    const scene = new BattleScene(vi.fn(), vi.fn());
+    const farmingSnapshot = createCampaignController().getSnapshot();
+    let snapshot = farmingSnapshot;
+    const redrawEnemy = vi.spyOn(
+      scene as unknown as { redrawEnemy(): void },
+      'redrawEnemy',
+    ).mockImplementation(() => undefined);
+    const deathFeedback = vi.fn();
+    Object.assign(scene, {
+      campaign: {
+        advance: vi.fn(() => []),
+        pause: vi.fn(() => []),
+        resume: vi.fn(() => []),
+        startBreakthrough: vi.fn(() => {
+          snapshot = {
+            ...farmingSnapshot,
+            mode: 'breakthrough',
+            encounter: {
+              ...farmingSnapshot.encounter!,
+              visual: { ...farmingSnapshot.encounter!.visual, name: 'Whisperwood Sentinel' },
+            },
+          };
+        }),
+        startBoss: vi.fn(),
+        getSnapshot: vi.fn(() => snapshot),
+      } satisfies CampaignController,
+      renderedVisualName: farmingSnapshot.encounter!.visual.name,
+      enemyContainer: { x: 690, y: 414 },
+      tweens: { add: deathFeedback, killTweensOf: vi.fn() },
+      ready: true,
+    });
+
+    (scene as unknown as {
+      animateEvent(event: { type: 'death'; actor: 'enemy'; hp: number }): void;
+    }).animateEvent({ type: 'death', actor: 'enemy', hp: 0 });
+    scene.startBreakthrough();
+
+    expect(redrawEnemy).not.toHaveBeenCalled();
+  });
+
+  it('defers a manual boss visual change while breakthrough death feedback plays', () => {
+    const scene = new BattleScene(vi.fn(), vi.fn());
+    const farmingSnapshot = createCampaignController().getSnapshot();
+    const breakthroughSnapshot = {
+      ...farmingSnapshot,
+      mode: 'boss-ready' as const,
+      encounter: {
+        ...farmingSnapshot.encounter!,
+        visual: { ...farmingSnapshot.encounter!.visual, name: 'Whisperwood Sentinel' },
+      },
+    };
+    let snapshot: CampaignSnapshot = breakthroughSnapshot;
+    const redrawEnemy = vi.spyOn(
+      scene as unknown as { redrawEnemy(): void },
+      'redrawEnemy',
+    ).mockImplementation(() => undefined);
+    const deathFeedback = vi.fn();
+    Object.assign(scene, {
+      campaign: {
+        advance: vi.fn(() => []),
+        pause: vi.fn(() => []),
+        resume: vi.fn(() => []),
+        startBreakthrough: vi.fn(),
+        startBoss: vi.fn(() => {
+          snapshot = {
+            ...breakthroughSnapshot,
+            mode: 'boss',
+            encounter: {
+              ...breakthroughSnapshot.encounter!,
+              visual: { ...breakthroughSnapshot.encounter!.visual, name: 'Whisperwood Warden' },
+            },
+          };
+        }),
+        getSnapshot: vi.fn(() => snapshot),
+      } satisfies CampaignController,
+      renderedVisualName: breakthroughSnapshot.encounter.visual.name,
+      enemyContainer: { x: 690, y: 414 },
+      tweens: { add: deathFeedback, killTweensOf: vi.fn() },
+      ready: true,
+    });
+
+    (scene as unknown as {
+      animateEvent(event: { type: 'death'; actor: 'enemy'; hp: number }): void;
+    }).animateEvent({ type: 'death', actor: 'enemy', hp: 0 });
+    scene.startBoss();
+
+    expect(redrawEnemy).not.toHaveBeenCalled();
   });
 
   it('reports a create failure once and stops all future updates', () => {

@@ -24,6 +24,8 @@ export class BattleScene extends Phaser.Scene {
   private renderedVisualName?: string;
   private renderedChapterNumber?: number;
   private pendingEnemyVisual?: EncounterVisual;
+  private enemyDeathFeedbackActive = false;
+  private ready = false;
   private failed = false;
 
   constructor(
@@ -53,8 +55,8 @@ export class BattleScene extends Phaser.Scene {
         strokeThickness: 5,
       }).setOrigin(0.5).setDepth(20);
 
-      this.renderCampaign(snapshot);
-      this.publishStatus(snapshot);
+      this.ready = true;
+      this.renderAndPublish(snapshot);
     } catch (error) {
       this.fail(error);
     }
@@ -65,9 +67,7 @@ export class BattleScene extends Phaser.Scene {
 
     try {
       paused ? this.campaign.pause() : this.campaign.resume();
-      const snapshot = this.campaign.getSnapshot();
-      this.renderCampaign(snapshot);
-      this.publishStatus(snapshot);
+      this.renderAndPublish(this.campaign.getSnapshot());
     } catch (error) {
       this.fail(error);
     }
@@ -78,9 +78,7 @@ export class BattleScene extends Phaser.Scene {
 
     try {
       this.campaign.startBreakthrough();
-      const snapshot = this.campaign.getSnapshot();
-      this.renderCampaign(snapshot);
-      this.publishStatus(snapshot);
+      this.renderAndPublish(this.campaign.getSnapshot());
     } catch (error) {
       this.fail(error);
     }
@@ -91,16 +89,14 @@ export class BattleScene extends Phaser.Scene {
 
     try {
       this.campaign.startBoss();
-      const snapshot = this.campaign.getSnapshot();
-      this.renderCampaign(snapshot);
-      this.publishStatus(snapshot);
+      this.renderAndPublish(this.campaign.getSnapshot());
     } catch (error) {
       this.fail(error);
     }
   }
 
   update(_time: number, delta: number): void {
-    if (this.failed) return;
+    if (this.failed || !this.ready) return;
 
     try {
       const contributionMs = Math.min(delta, COMBAT_BALANCE.maxFrameContributionMs);
@@ -289,6 +285,12 @@ export class BattleScene extends Phaser.Scene {
     this.renderedVisualName = visual.name;
   }
 
+  private renderAndPublish(snapshot: CampaignSnapshot): void {
+    if (!this.ready) return;
+    this.renderCampaign(snapshot);
+    this.publishStatus(snapshot);
+  }
+
   private renderCampaign(snapshot: CampaignSnapshot, deferEnemyRedraw = false): void {
     if (this.renderedChapterNumber !== snapshot.chapter.number) {
       this.drawChapterBackdrop(snapshot.chapter.backgroundColor);
@@ -297,7 +299,7 @@ export class BattleScene extends Phaser.Scene {
 
     const visual = snapshot.encounter?.visual;
     if (visual && this.renderedVisualName !== visual.name) {
-      if (deferEnemyRedraw || this.pendingEnemyVisual?.name === visual.name) {
+      if (deferEnemyRedraw || this.enemyDeathFeedbackActive || this.pendingEnemyVisual?.name === visual.name) {
         this.pendingEnemyVisual = visual;
       } else {
         this.redrawEnemy(visual);
@@ -389,6 +391,7 @@ export class BattleScene extends Phaser.Scene {
       case 'death': {
         const actor = this.getContainer(event.actor);
         if (!actor) return;
+        if (event.actor === 'enemy') this.enemyDeathFeedbackActive = true;
         const position = this.getBasePosition(event.actor);
         this.tweens.killTweensOf(actor);
         this.tweens.add({
@@ -398,7 +401,9 @@ export class BattleScene extends Phaser.Scene {
           duration: 320,
           ease: 'Quad.In',
           onComplete: () => {
-            if (event.actor !== 'enemy' || !this.pendingEnemyVisual || this.failed) return;
+            if (event.actor !== 'enemy') return;
+            this.enemyDeathFeedbackActive = false;
+            if (!this.pendingEnemyVisual || this.failed) return;
             const visual = this.pendingEnemyVisual;
             this.pendingEnemyVisual = undefined;
             this.redrawEnemy(visual);
