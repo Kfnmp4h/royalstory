@@ -1,6 +1,6 @@
 # RoyalStory Milestone 5 Equipment Design
 
-**Status:** Approved design, pending written-spec review  
+**Status:** Approved
 **Date:** 2026-07-15  
 **Roadmap order:** Milestone 5 → Milestone 6 → Milestone 7 → Milestone 4. Skill development remains numbered Milestone 4 but moves to the end.
 
