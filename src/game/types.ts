@@ -18,6 +18,12 @@ export interface CombatBalance {
   enemy: CombatantConfig;
 }
 
+export interface PlayerStats {
+  attack: number;
+  defense: number;
+  maxHp: number;
+}
+
 export interface CombatantSnapshot extends CombatantConfig {
   hp: number;
   alive: boolean;
