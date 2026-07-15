@@ -1,6 +1,6 @@
 # RoyalStory Combat Sandbox
 
-RoyalStory Milestone 2 is a local, responsive campaign sandbox. React provides the page and campaign controls, Phaser draws the battle scene, and a pure TypeScript engine owns combat state.
+RoyalStory Milestone 3 is a local, responsive campaign sandbox. React provides the page and campaign controls, Phaser draws the battle scene, and a pure TypeScript engine owns combat state.
 
 ## Requirements
 
