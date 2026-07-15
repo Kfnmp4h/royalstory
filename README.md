@@ -24,15 +24,16 @@ pnpm typecheck
 pnpm build
 ```
 
-## Milestone 2 features
+## Milestone 3 features
 
-- 36 original chapters, each with a farming encounter, a breakthrough challenge, and a boss challenge.
-- Progress from farming through breakthrough and boss encounters to unlock the next chapter.
-- Original code-drawn visuals for the campaign and combat scene; no external game assets are used.
-- The deterministic test profile exists only in memory. Reloading resets it to the first chapter.
+- Automatic XP from farming enemies, breakthrough Sentinels, and chapter bosses.
+- Deterministic level progression from 1 to 200 with overflow XP.
+- ATK, DEF, and max-HP scale from one central balance entrypoint and affect live combat.
+- A responsive Hero panel shows level, XP, ATK, DEF, and HP while Phaser combat continues.
+- Central equipment metadata defines 14 slots, item levels 1–200, and five rarities for Milestone 5.
 
-## Milestone 2 boundaries
+## Milestone 3 boundaries
 
-This milestone has no persistent storage: it does not provide saves, accounts, online syncing, XP, rewards, or offline progress. It also does not include skills, equipment, character creation, imported game assets, or later-milestone systems.
+Progression exists only in memory and resets on reload. This milestone has no browser persistence, accounts, server syncing, offline progress, skills, item generation, inventory, or currencies.
 
 All visuals are original and code-drawn.
