@@ -4,3 +4,6 @@ dist/
 coverage/
 .superpowers/
 work/
+.env
+.env.*
+!.env.example
