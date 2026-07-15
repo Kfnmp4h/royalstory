@@ -226,12 +226,12 @@ describe('createBattleGame', () => {
     };
     for (let chapter = 1; chapter < 36; chapter += 1) {
       campaign.startBreakthrough();
-      advanceUntil(() => campaign.getSnapshot().mode === 'boss-ready');
+      advanceUntil(() => campaign.getSnapshot().bossUnlocked);
       campaign.startBoss();
       advanceUntil(() => campaign.getSnapshot().chapter.number === chapter + 1);
     }
     campaign.startBreakthrough();
-    advanceUntil(() => campaign.getSnapshot().mode === 'boss-ready');
+    advanceUntil(() => campaign.getSnapshot().bossUnlocked);
 
     const setText = vi.fn();
     const scene = new BattleScene(vi.fn(), vi.fn());
@@ -411,15 +411,15 @@ describe('createBattleGame', () => {
   it('defers a manual boss visual change while breakthrough death feedback plays', () => {
     const scene = new BattleScene(vi.fn(), vi.fn());
     const farmingSnapshot = createCampaignController().getSnapshot();
-    const breakthroughSnapshot = {
+    const unlockedFarmingSnapshot = {
       ...farmingSnapshot,
-      mode: 'boss-ready' as const,
+      bossUnlocked: true,
       encounter: {
         ...farmingSnapshot.encounter!,
         visual: { ...farmingSnapshot.encounter!.visual, name: 'Whisperwood Sentinel' },
       },
     };
-    let snapshot: CampaignSnapshot = breakthroughSnapshot;
+    let snapshot: CampaignSnapshot = unlockedFarmingSnapshot;
     const redrawEnemy = vi.spyOn(
       scene as unknown as { redrawEnemy(): void },
       'redrawEnemy',
@@ -433,17 +433,17 @@ describe('createBattleGame', () => {
         startBreakthrough: vi.fn(),
         startBoss: vi.fn(() => {
           snapshot = {
-            ...breakthroughSnapshot,
+            ...unlockedFarmingSnapshot,
             mode: 'boss',
             encounter: {
-              ...breakthroughSnapshot.encounter!,
-              visual: { ...breakthroughSnapshot.encounter!.visual, name: 'Whisperwood Warden' },
+              ...unlockedFarmingSnapshot.encounter!,
+              visual: { ...unlockedFarmingSnapshot.encounter!.visual, name: 'Whisperwood Warden' },
             },
           };
         }),
         getSnapshot: vi.fn(() => snapshot),
       } satisfies CampaignController,
-      renderedVisualName: breakthroughSnapshot.encounter.visual.name,
+      renderedVisualName: unlockedFarmingSnapshot.encounter.visual.name,
       enemyContainer: { x: 690, y: 414 },
       tweens: { add: deathFeedback, killTweensOf: vi.fn() },
       ready: true,

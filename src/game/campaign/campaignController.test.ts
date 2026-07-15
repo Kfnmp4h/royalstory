@@ -22,7 +22,7 @@ const withEncounterBalance = (
 describe('createCampaignController', () => {
   it('starts in chapter one farming and permits exactly one breakthrough command', () => {
     const campaign = createCampaignController();
-    expect(campaign.getSnapshot()).toMatchObject({ mode: 'farming', unlockedChapter: 1, chapter: { number: 1 } });
+    expect(campaign.getSnapshot()).toMatchObject({ mode: 'farming', bossUnlocked: false, unlockedChapter: 1, chapter: { number: 1 } });
     campaign.startBreakthrough();
     expect(campaign.getSnapshot()).toMatchObject({ mode: 'breakthrough', encounter: { kind: 'breakthrough' } });
     campaign.startBreakthrough();
@@ -78,15 +78,20 @@ describe('createCampaignController', () => {
     }
   });
 
-  it('moves a won breakthrough to boss-ready without forwarding further combat', () => {
-    const campaign = createCampaignController();
+  it('returns a won breakthrough to farming with the boss unlocked and keeps farming active', () => {
+    const campaign = createCampaignController(withEncounterBalance('breakthrough', {
+      ...CHAPTERS[0].breakthrough.balance,
+      player: { ...CHAPTERS[0].breakthrough.balance.player, damage: 10_000, attackIntervalMs: 100 },
+    }));
     campaign.startBreakthrough();
-    advanceUntil(campaign, () => campaign.getSnapshot().mode === 'boss-ready');
+    advanceUntil(campaign, () => campaign.getSnapshot().bossUnlocked);
 
-    const ready = campaign.getSnapshot();
-    expect(ready).toMatchObject({ mode: 'boss-ready', encounter: { kind: 'breakthrough' } });
-    expect(campaign.advance(60_000)).toEqual([]);
-    expect(campaign.getSnapshot()).toEqual(ready);
+    expect(campaign.getSnapshot()).toMatchObject({
+      mode: 'farming', bossUnlocked: true, encounter: { kind: 'farming' }, combat: { phase: 'fighting' },
+    });
+    const runtimeBefore = campaign.getSnapshot().combat!.activeRuntimeMs;
+    campaign.advance(100);
+    expect(campaign.getSnapshot().combat!.activeRuntimeMs).toBeGreaterThan(runtimeBefore);
   });
 
   it('keeps farming after an enemy death and resumes the encounter normally', () => {
@@ -112,47 +117,61 @@ describe('createCampaignController', () => {
 
     expect(campaign.getSnapshot()).toMatchObject({
       mode: 'farming',
+      bossUnlocked: false,
       chapter: { number: 1 },
       encounter: { kind: 'farming' },
     });
   });
 
-  it('moves a won boss to the next chapter farming and raises the unlock', () => {
+  it('moves a won boss to the next chapter farming and clears the boss unlock', () => {
     const campaign = createCampaignController();
     campaign.startBreakthrough();
-    advanceUntil(campaign, () => campaign.getSnapshot().mode === 'boss-ready');
+    advanceUntil(campaign, () => campaign.getSnapshot().bossUnlocked);
     campaign.startBoss();
     advanceUntil(campaign, () => campaign.getSnapshot().chapter.number === 2);
 
     expect(campaign.getSnapshot()).toMatchObject({
       mode: 'farming',
+      bossUnlocked: false,
       unlockedChapter: 2,
       chapter: { number: 2 },
       encounter: { kind: 'farming' },
     });
   });
 
-  it('returns a lost boss to farming in the same chapter', () => {
-    const campaign = createCampaignController(withEncounterBalance('boss', {
-      ...CHAPTERS[0].boss.balance,
-      enemy: { ...CHAPTERS[0].boss.balance.enemy, damage: 120, attackIntervalMs: 100 },
+  it('keeps the boss unlocked after a boss loss and only starts a boss from unlocked farming', () => {
+    const chapters = CHAPTERS.map((chapter) => ({
+      ...chapter,
+      breakthrough: {
+        ...chapter.breakthrough,
+        balance: {
+          ...chapter.breakthrough.balance,
+          player: { ...chapter.breakthrough.balance.player, damage: 10_000, attackIntervalMs: 100 },
+        },
+      },
+      boss: {
+        ...chapter.boss,
+        balance: {
+          ...chapter.boss.balance,
+          enemy: { ...chapter.boss.balance.enemy, damage: 120, attackIntervalMs: 100 },
+        },
+      },
     }));
+    const campaign = createCampaignController(chapters);
+    campaign.startBoss();
+    expect(campaign.getSnapshot()).toMatchObject({ mode: 'farming', bossUnlocked: false });
     campaign.startBreakthrough();
-    advanceUntil(campaign, () => campaign.getSnapshot().mode === 'boss-ready');
+    advanceUntil(campaign, () => campaign.getSnapshot().bossUnlocked);
     campaign.startBoss();
     advanceUntil(campaign, () => campaign.getSnapshot().mode === 'farming');
 
-    expect(campaign.getSnapshot()).toMatchObject({
-      mode: 'farming',
-      chapter: { number: 1 },
-      encounter: { kind: 'farming' },
-    });
+    expect(campaign.getSnapshot()).toMatchObject({ mode: 'farming', bossUnlocked: true });
   });
 
   it('keeps both start commands idempotent while a boss is active', () => {
     const campaign = createCampaignController();
     campaign.startBreakthrough();
-    advanceUntil(campaign, () => campaign.getSnapshot().mode === 'boss-ready');
+    advanceUntil(campaign, () => campaign.getSnapshot().bossUnlocked);
     campaign.startBoss();
     const boss = campaign.getSnapshot();
 
@@ -191,17 +210,17 @@ describe('createCampaignController', () => {
     const campaign = createCampaignController(instantVictoryChapters);
     for (let chapter = 1; chapter < 36; chapter += 1) {
       campaign.startBreakthrough();
-      advanceUntil(campaign, () => campaign.getSnapshot().mode === 'boss-ready');
+      advanceUntil(campaign, () => campaign.getSnapshot().bossUnlocked);
       campaign.startBoss();
       advanceUntil(campaign, () => campaign.getSnapshot().chapter.number === chapter + 1);
     }
     campaign.startBreakthrough();
-    advanceUntil(campaign, () => campaign.getSnapshot().mode === 'boss-ready');
+    advanceUntil(campaign, () => campaign.getSnapshot().bossUnlocked);
     campaign.startBoss();
     advanceUntil(campaign, () => campaign.getSnapshot().mode === 'campaign-complete');
 
     const complete = campaign.getSnapshot();
-    expect(complete).toMatchObject({ mode: 'campaign-complete', unlockedChapter: 36, chapter: { number: 36 }, encounter: null, combat: null });
+    expect(complete).toMatchObject({ mode: 'campaign-complete', bossUnlocked: false, unlockedChapter: 36, chapter: { number: 36 }, encounter: null, combat: null });
     campaign.startBreakthrough();
     campaign.startBoss();
     expect(campaign.advance(60_000)).toEqual([]);
@@ -218,8 +237,8 @@ describe('createCampaignController', () => {
     campaign.startBreakthrough();
     campaign.startBoss();
     expect(campaign.getSnapshot().mode).toBe('breakthrough');
-    advanceUntil(campaign, () => campaign.getSnapshot().mode === 'boss-ready');
+    advanceUntil(campaign, () => campaign.getSnapshot().bossUnlocked);
     campaign.startBreakthrough();
-    expect(campaign.getSnapshot().mode).toBe('boss-ready');
+    expect(campaign.getSnapshot()).toMatchObject({ mode: 'farming', bossUnlocked: true });
   });
 });

@@ -15,7 +15,8 @@ describe('campaign journey', () => {
 
     for (let chapter = 1; chapter <= 36; chapter += 1) {
       campaign.startBreakthrough();
-      advanceUntil(campaign, () => campaign.getSnapshot().mode === 'boss-ready');
+      advanceUntil(campaign, () => campaign.getSnapshot().bossUnlocked);
+      expect(campaign.getSnapshot().mode).toBe('farming');
       campaign.startBoss();
       advanceUntil(campaign, () => campaign.getSnapshot().mode !== 'boss');
 
@@ -23,11 +24,12 @@ describe('campaign journey', () => {
       if (chapter < 36) {
         expect(snapshot).toMatchObject({
           mode: 'farming',
+          bossUnlocked: false,
           chapter: { number: chapter + 1 },
         });
       }
     }
 
-    expect(campaign.getSnapshot().mode).toBe('campaign-complete');
+    expect(campaign.getSnapshot()).toMatchObject({ mode: 'campaign-complete', bossUnlocked: false });
   });
 });

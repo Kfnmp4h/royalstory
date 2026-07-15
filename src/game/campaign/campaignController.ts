@@ -86,6 +86,7 @@ export const createCampaignController = (
   let chapter = chapters === CHAPTERS ? getChapter(1) : chapters[0];
   let unlockedChapter = 1;
   let mode: CampaignMode = 'farming';
+  let bossUnlocked = false;
   let encounter: EncounterDefinition | null;
   let engine: CombatEngine | null;
 
@@ -107,8 +108,9 @@ export const createCampaignController = (
     if (death === undefined || mode === 'farming') return events;
 
     if (mode === 'breakthrough') {
-      if (death.actor === 'enemy') mode = 'boss-ready';
-      else returnToFarming();
+      if (death.actor === 'enemy') bossUnlocked = true;
+      else bossUnlocked = false;
+      returnToFarming();
       return events;
     }
 
@@ -118,6 +120,7 @@ export const createCampaignController = (
     }
 
     if (chapter.number === 36) {
+      bossUnlocked = false;
       mode = 'campaign-complete';
       encounter = null;
       engine = null;
@@ -126,12 +129,14 @@ export const createCampaignController = (
 
     unlockedChapter = chapter.number + 1;
     chapter = chapters[unlockedChapter - 1];
+    bossUnlocked = false;
     returnToFarming();
     return events;
   };
 
   const getSnapshot = (): CampaignSnapshot => ({
     mode,
+    bossUnlocked,
     chapter,
     unlockedChapter,
     encounter,
@@ -143,10 +148,10 @@ export const createCampaignController = (
     pause: () => engine?.pause() ?? [],
     resume: () => engine?.resume() ?? [],
     startBreakthrough: () => {
-      if (mode === 'farming') startEncounter(chapter.breakthrough, 'breakthrough');
+      if (mode === 'farming' && !bossUnlocked) startEncounter(chapter.breakthrough, 'breakthrough');
     },
     startBoss: () => {
-      if (mode === 'boss-ready') startEncounter(chapter.boss, 'boss');
+      if (mode === 'farming' && bossUnlocked) startEncounter(chapter.boss, 'boss');
     },
     getSnapshot,
   };

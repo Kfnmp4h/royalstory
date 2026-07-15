@@ -4,18 +4,10 @@ import type { BattleController, BattleStatus } from './game/phaser/battleGame';
 import type { CampaignMode } from './game/campaign/campaignTypes';
 import { subscribeToVisibility } from './game/visibilityController';
 
-const campaignMessages: Record<CampaignMode, { status: string; instruction: string }> = {
-  farming: {
-    status: 'Farming',
-    instruction: 'Defeat enemies to prepare for a breakthrough.',
-  },
+const campaignMessages: Record<Exclude<CampaignMode, 'farming'>, { status: string; instruction: string }> = {
   breakthrough: {
     status: 'Breakthrough',
     instruction: 'Defeat the sentinel to challenge the chapter boss.',
-  },
-  'boss-ready': {
-    status: 'Boss ready',
-    instruction: 'The chapter boss is ready to be challenged.',
   },
   boss: {
     status: 'Boss battle',
@@ -78,7 +70,13 @@ export function App() {
         : 'Starting';
   const snapshot = status?.snapshot;
   const combat = snapshot?.combat;
-  const campaignMessage = snapshot ? campaignMessages[snapshot.mode] : null;
+  const campaignMessage = snapshot
+    ? snapshot.mode === 'farming'
+      ? snapshot.bossUnlocked
+        ? { status: 'Farming â€” boss unlocked', instruction: 'Keep farming or challenge the chapter boss.' }
+        : { status: 'Farming', instruction: 'Defeat enemies to prepare for a breakthrough.' }
+      : campaignMessages[snapshot.mode]
+    : null;
 
   return (
     <main className="app-shell">
@@ -94,14 +92,15 @@ export function App() {
             <p className="campaign-status">{campaignMessage.status}</p>
             <p className="campaign-instruction">{campaignMessage.instruction}</p>
             {snapshot.mode === 'farming' ? (
-              <button type="button" onClick={() => controllerRef.current?.startBreakthrough()}>
-                Start breakthrough
-              </button>
-            ) : null}
-            {snapshot.mode === 'boss-ready' ? (
-              <button type="button" onClick={() => controllerRef.current?.startBoss()}>
-                Challenge boss
-              </button>
+              snapshot.bossUnlocked ? (
+                <button type="button" onClick={() => controllerRef.current?.startBoss()}>
+                  Challenge boss
+                </button>
+              ) : (
+                <button type="button" onClick={() => controllerRef.current?.startBreakthrough()}>
+                  Start breakthrough
+                </button>
+              )
             ) : null}
           </>
         ) : <p>Loading campaign progress…</p>}

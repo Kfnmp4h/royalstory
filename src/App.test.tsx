@@ -29,6 +29,7 @@ const runningStatus: BattleStatus = {
   state: 'running',
   snapshot: {
     mode: 'farming',
+    bossUnlocked: false,
     chapter: getChapter(1),
     unlockedChapter: 1,
     encounter: getChapter(1).farming,
@@ -61,12 +62,11 @@ const runningStatus: BattleStatus = {
   },
 };
 
-const bossReadyStatus: BattleStatus = {
+const unlockedFarmingStatus: BattleStatus = {
   ...runningStatus,
   snapshot: {
     ...runningStatus.snapshot,
-    mode: 'boss-ready',
-    encounter: getChapter(1).breakthrough,
+    bossUnlocked: true,
   },
 };
 
@@ -74,6 +74,7 @@ const campaignCompleteStatus: BattleStatus = {
   state: 'running',
   snapshot: {
     mode: 'campaign-complete',
+    bossUnlocked: false,
     chapter: getChapter(36),
     unlockedChapter: 36,
     encounter: null,
@@ -212,11 +213,12 @@ describe('App', () => {
     expect(battleGame.startBreakthrough).toHaveBeenCalledOnce();
   });
 
-  it('shows the boss action only after a breakthrough win', () => {
+  it('keeps farming visible and offers the boss action after a breakthrough win', () => {
     render(<App />);
 
-    act(() => callbacks.onStatus(bossReadyStatus));
+    act(() => callbacks.onStatus(unlockedFarmingStatus));
 
+    expect(screen.getByText('Farming â€” boss unlocked')).toBeInTheDocument();
     const bossButton = screen.getByRole('button', { name: 'Challenge boss' });
     expect(bossButton).toBeEnabled();
     expect(screen.queryByRole('button', { name: 'Start breakthrough' })).not.toBeInTheDocument();
@@ -255,7 +257,7 @@ describe('App', () => {
   it('does not create a second game for campaign status updates', () => {
     render(<App />);
 
-    act(() => callbacks.onStatus(bossReadyStatus));
+    act(() => callbacks.onStatus(unlockedFarmingStatus));
     act(() => callbacks.onStatus(campaignCompleteStatus));
 
     expect(battleGame.createBattleGame).toHaveBeenCalledTimes(1);

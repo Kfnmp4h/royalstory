@@ -1,6 +1,6 @@
 import type { CombatEvent, CombatSnapshot, CombatBalance } from '../types';
 
-export type CampaignMode = 'farming' | 'breakthrough' | 'boss-ready' | 'boss' | 'campaign-complete';
+export type CampaignMode = 'farming' | 'breakthrough' | 'boss' | 'campaign-complete';
 export type EncounterKind = 'farming' | 'breakthrough' | 'boss';
 
 export interface EncounterVisual {
@@ -27,6 +27,7 @@ export interface ChapterDefinition {
 
 export interface CampaignSnapshot {
   mode: CampaignMode;
+  bossUnlocked: boolean;
   chapter: ChapterDefinition;
   unlockedChapter: number;
   encounter: EncounterDefinition | null;
