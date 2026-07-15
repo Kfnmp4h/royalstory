@@ -12,14 +12,37 @@ import {
 describe('central balance', () => {
   it('keeps combat and equipment metadata frozen', () => {
     expect(COMBAT_BALANCE.player).toMatchObject({ name: 'Ari', maxHp: 120 });
-    expect(EQUIPMENT_BALANCE).toEqual({
+    expect(EQUIPMENT_BALANCE).toMatchObject({
       slotCount: 14,
       minItemLevel: 1,
       maxItemLevel: 200,
+      slots: ['Hat', 'Cape', 'Top', 'Shoulder', 'Bottom', 'Belt', 'Gloves', 'Shoes', 'Ring', 'Ring 2', 'Necklace', 'Eye', 'Face', 'Earring'],
       rarities: ['Normal', 'Rare', 'Epic', 'Unique', 'Legendary'],
+      rarityMultipliers: { Normal: 1, Rare: 1.2, Epic: 1.5, Unique: 1.9, Legendary: 2.4 },
+      dropChances: { farming: 0.25, breakthrough: 1, boss: 1 },
+      rarityThresholds: {
+        farming: [0.6, 0.85, 0.95, 0.99, 1],
+        breakthrough: [0.4, 0.75, 0.92, 0.99, 1],
+        boss: [0.2, 0.55, 0.8, 0.95, 1],
+      },
+      rawSubstatPercent: { min: 25, max: 50 },
+      percentageSubstatRanges: {
+        Normal: { min: 1, max: 1 },
+        Rare: { min: 1, max: 2 },
+        Epic: { min: 2, max: 3 },
+        Unique: { min: 3, max: 4 },
+        Legendary: { min: 4, max: 5 },
+      },
     });
     expect(Object.isFrozen(COMBAT_BALANCE)).toBe(true);
+    expect(Object.isFrozen(EQUIPMENT_BALANCE)).toBe(true);
+    expect(Object.isFrozen(EQUIPMENT_BALANCE.slots)).toBe(true);
     expect(Object.isFrozen(EQUIPMENT_BALANCE.rarities)).toBe(true);
+    expect(Object.isFrozen(EQUIPMENT_BALANCE.rarityMultipliers)).toBe(true);
+    expect(Object.isFrozen(EQUIPMENT_BALANCE.rarityThresholds)).toBe(true);
+    expect(Object.isFrozen(EQUIPMENT_BALANCE.rarityThresholds.farming)).toBe(true);
+    expect(Object.isFrozen(EQUIPMENT_BALANCE.percentageSubstatRanges.Legendary)).toBe(true);
+    expect(Object.isFrozen(EQUIPMENT_BALANCE.powerWeights)).toBe(true);
   });
 
   it('exposes exact level, stat, and encounter formulas', () => {

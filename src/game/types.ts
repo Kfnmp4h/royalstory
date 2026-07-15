@@ -7,6 +7,19 @@ export interface PlayerStats {
   maxHp: number;
 }
 
+export interface CombatModifiers {
+  accuracy: number;
+  evasion: number;
+  criticalRate: number;
+  criticalDamage: number;
+  attackSpeed: number;
+  damage: number;
+  bossDamage: number;
+  normalDamage: number;
+}
+
+export interface PlayerCombatProfile extends PlayerStats, CombatModifiers {}
+
 export interface CombatantConfig extends PlayerStats {
   id: ActorId;
   name: string;
