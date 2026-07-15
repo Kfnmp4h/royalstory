@@ -29,9 +29,11 @@ function formatRuntime(runtimeMs: number): string {
 export function App() {
   const hostRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<BattleController | null>(null);
+  const previousLevelRef = useRef<number | null>(null);
   const [status, setStatus] = useState<BattleStatus | null>(null);
   const [visibilityState, setVisibilityState] = useState<BattleStatus['state'] | null>(null);
   const [error, setError] = useState<Error | null>(null);
+  const [levelUpMessage, setLevelUpMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const parent = hostRef.current;
@@ -61,6 +63,18 @@ export function App() {
     setVisibilityState((current) => hidden ? 'paused' : current === 'paused' ? 'running' : null);
   }), []);
 
+  useEffect(() => {
+    const level = status?.snapshot.progression.level;
+    if (level === undefined) return;
+    const previous = previousLevelRef.current;
+    previousLevelRef.current = level;
+    if (previous === null || level <= previous) return;
+
+    setLevelUpMessage(`Level ${level} reached`);
+    const timer = window.setTimeout(() => setLevelUpMessage(null), 2_500);
+    return () => window.clearTimeout(timer);
+  }, [status?.snapshot.progression.level]);
+
   const statusLabel = error
     ? 'Error'
     : visibilityState === 'running' || (!visibilityState && status?.state === 'running')
@@ -70,6 +84,8 @@ export function App() {
         : 'Starting';
   const snapshot = status?.snapshot;
   const combat = snapshot?.combat;
+  const progression = snapshot?.progression;
+  const isMaxLevel = progression?.level === 200;
   const campaignMessage = snapshot
     ? snapshot.mode === 'farming'
       ? snapshot.bossUnlocked
@@ -81,7 +97,7 @@ export function App() {
   return (
     <main className="app-shell">
       <header className="hero-header">
-        <p className="eyebrow">Milestone 2 · Campaign Sandbox</p>
+        <p className="eyebrow">Milestone 3 · Progression Sandbox</p>
         <h1>RoyalStory</h1>
       </header>
       <section className="campaign-panel" aria-label="Campaign progress">
@@ -104,6 +120,36 @@ export function App() {
             ) : null}
           </>
         ) : <p>Loading campaign progress…</p>}
+      </section>
+      <section className="hero-panel" aria-label="Hero progression">
+        {progression ? (
+          <>
+            <div className="hero-level-row">
+              <p>Level {progression.level} / 200</p>
+              <p>{isMaxLevel ? 'MAX' : `${progression.xp} / ${progression.xpToNextLevel} XP`}</p>
+            </div>
+            <progress
+              aria-label="Experience"
+              max={isMaxLevel ? 1 : progression.xpToNextLevel}
+              value={isMaxLevel ? 1 : progression.xp}
+            />
+            <dl className="hero-stats">
+              <div>
+                <dt>ATK</dt>
+                <dd>{progression.stats.attack}</dd>
+              </div>
+              <div>
+                <dt>DEF</dt>
+                <dd>{progression.stats.defense}</dd>
+              </div>
+              <div>
+                <dt>HP</dt>
+                <dd>{progression.stats.maxHp}</dd>
+              </div>
+            </dl>
+            {levelUpMessage ? <p className="level-up-message" role="status">{levelUpMessage}</p> : null}
+          </>
+        ) : <p>Loading hero progression…</p>}
       </section>
       <section className="battle-card" aria-label="Automatic battle">
         <div

@@ -145,6 +145,31 @@ describe('createBattleGame', () => {
     expect(redrawEnemy).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'Whisperwood Sentinel' }));
   });
 
+  it('does not redraw the enemy for a progression-only snapshot update', () => {
+    const scene = new BattleScene(vi.fn(), vi.fn());
+    const campaignSnapshot = createCampaignController().getSnapshot();
+    const redrawingScene = scene as unknown as {
+      renderCampaign(snapshot: typeof campaignSnapshot): void;
+      redrawEnemy(visual: NonNullable<typeof campaignSnapshot.encounter>['visual']): void;
+      renderedVisualName?: string;
+    };
+    const redrawEnemy = vi.spyOn(redrawingScene, 'redrawEnemy').mockImplementation((visual) => {
+      redrawingScene.renderedVisualName = visual.name;
+    });
+
+    redrawingScene.renderCampaign(campaignSnapshot);
+    redrawEnemy.mockClear();
+    redrawingScene.renderCampaign({
+      ...campaignSnapshot,
+      progression: {
+        ...campaignSnapshot.progression,
+        level: campaignSnapshot.progression.level + 1,
+      },
+    });
+
+    expect(redrawEnemy).not.toHaveBeenCalled();
+  });
+
   it('retains campaign commands without rendering or failing before scene creation', () => {
     const onError = vi.fn();
     const scene = new BattleScene(vi.fn(), onError);

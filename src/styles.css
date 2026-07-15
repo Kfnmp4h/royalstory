@@ -136,6 +136,74 @@ button {
   background: #fff1bd;
 }
 
+.hero-panel {
+  display: grid;
+  width: min(100%, 70rem);
+  min-width: 0;
+  margin-inline: auto;
+  gap: 10px;
+  padding: clamp(14px, 3vw, 20px);
+  border: 1px solid rgb(231 202 131 / 35%);
+  border-radius: 14px;
+  background: rgb(24 34 62 / 92%);
+}
+
+.hero-panel p {
+  margin: 0;
+}
+
+.hero-level-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #fffaf0;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.hero-panel progress {
+  width: 100%;
+  min-height: 12px;
+  accent-color: #ffd66b;
+}
+
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.hero-stats > div {
+  min-width: 0;
+  padding: 9px 10px;
+  border-radius: 10px;
+  text-align: center;
+  background: rgb(13 19 38 / 58%);
+}
+
+.hero-stats dt {
+  color: #c8d1e8;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.hero-stats dd {
+  margin: 0.18rem 0 0;
+  overflow-wrap: anywhere;
+  color: #ffffff;
+  font-size: clamp(1rem, 3vw, 1.25rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.level-up-message {
+  margin: 0;
+  color: #fff4bf;
+  font-weight: 800;
+}
+
 .battle-card {
   width: min(100%, max(18rem, calc((100dvh - 18rem) * 16 / 9)));
   min-height: min(10rem, 45dvh);

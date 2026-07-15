@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { StrictMode } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BattleStatus } from './game/phaser/battleGame';
 import { getChapter } from './game/campaign/campaignDefinitions';
 import appSource from './App?raw';
@@ -116,10 +116,71 @@ describe('App', () => {
     });
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('introduces the RoyalStory combat sandbox', () => {
     render(<App />);
     expect(screen.getByRole('heading', { name: 'RoyalStory' })).toBeInTheDocument();
-    expect(screen.getByText('Milestone 2 · Campaign Sandbox')).toBeInTheDocument();
+    expect(screen.getByText('Milestone 3 · Progression Sandbox')).toBeInTheDocument();
+  });
+
+  it('shows level, XP, and all three base stats', () => {
+    render(<App />);
+
+    expect(screen.getByRole('region', { name: 'Hero progression' })).toBeInTheDocument();
+    expect(screen.getByText('Level 1 / 200')).toBeInTheDocument();
+    expect(screen.getByText('0 / 50 XP')).toBeInTheDocument();
+    expect(screen.getByText('18', { selector: 'dd' })).toBeInTheDocument();
+    expect(screen.getByText('2', { selector: 'dd' })).toBeInTheDocument();
+    expect(screen.getByText('120', { selector: 'dd' })).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: 'Experience' })).toHaveAttribute('value', '0');
+  });
+
+  it('shows the newest level-up message briefly without recreating the game', () => {
+    vi.useFakeTimers();
+    render(<App />);
+
+    act(() => callbacks.onStatus({
+      ...runningStatus,
+      snapshot: {
+        ...runningStatus.snapshot,
+        progression: {
+          level: 3,
+          xp: 15,
+          xpToNextLevel: 100,
+          totalXp: 140,
+          stats: { attack: 22, defense: 4, maxHp: 136 },
+        },
+      },
+    }));
+
+    expect(screen.getByText('Level 3 reached')).toBeInTheDocument();
+    expect(battleGame.createBattleGame).toHaveBeenCalledTimes(1);
+    act(() => vi.advanceTimersByTime(2_500));
+    expect(screen.queryByText('Level 3 reached')).not.toBeInTheDocument();
+  });
+
+  it('shows a full MAX progress state at level 200', () => {
+    render(<App />);
+
+    act(() => callbacks.onStatus({
+      ...campaignCompleteStatus,
+      snapshot: {
+        ...campaignCompleteStatus.snapshot,
+        progression: {
+          level: 200,
+          xp: 0,
+          xpToNextLevel: 0,
+          totalXp: 502_475,
+          stats: { attack: 416, defense: 201, maxHp: 1_712 },
+        },
+      },
+    }));
+
+    expect(screen.getByText('MAX')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: 'Experience' })).toHaveAttribute('value', '1');
   });
 
   it('immediately displays Paused when initially hidden before the first battle status', () => {
