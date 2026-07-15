@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { createCampaignController } from './campaignController';
+import { CHAPTERS } from './campaignDefinitions';
+import { createCampaignController as createCampaignControllerRuntime } from './campaignController';
+
+const createCampaignController = () => createCampaignControllerRuntime(
+  CHAPTERS,
+  { combatRandom: () => 0.5 },
+);
 
 const advanceUntil = (
   campaign: ReturnType<typeof createCampaignController>,

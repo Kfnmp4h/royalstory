@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { CHAPTERS } from './campaignDefinitions';
-import { createCampaignController } from './campaignController';
+import { createCampaignController as createCampaignControllerRuntime } from './campaignController';
 import type { ChapterDefinition } from './campaignTypes';
+
+const createCampaignController = (
+  chapters: readonly ChapterDefinition[] = CHAPTERS,
+  options: { readonly combatRandom?: () => number } = {},
+) => createCampaignControllerRuntime(chapters, { combatRandom: () => 0.5, ...options });
 
 const advanceUntil = (
   campaign: ReturnType<typeof createCampaignController>,
@@ -20,6 +25,18 @@ const withEncounterBalance = (
 }));
 
 describe('createCampaignController', () => {
+  it('routes combat randomness through the injected campaign source', () => {
+    let randomCalls = 0;
+    const campaign = createCampaignController(CHAPTERS, {
+      combatRandom: () => {
+        randomCalls += 1;
+        return 0.5;
+      },
+    });
+    campaign.advance(900);
+    expect(randomCalls).toBe(2);
+  });
+
   it('starts in chapter one farming and permits exactly one breakthrough command', () => {
     const campaign = createCampaignController();
     expect(campaign.getSnapshot()).toMatchObject({ mode: 'farming', bossUnlocked: false, unlockedChapter: 1, chapter: { number: 1 } });

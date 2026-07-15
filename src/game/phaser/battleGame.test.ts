@@ -46,9 +46,14 @@ vi.mock('phaser', () => {
 
 import { BattleScene } from './BattleScene';
 import { createBattleGame } from './battleGame';
-import { createCampaignController } from '../campaign/campaignController';
+import { createCampaignController as createCampaignControllerRuntime } from '../campaign/campaignController';
 import { CHAPTERS } from '../campaign/campaignDefinitions';
 import type { CampaignController, CampaignSnapshot } from '../campaign/campaignTypes';
+
+const createCampaignController = (chapters = CHAPTERS) => createCampaignControllerRuntime(
+  chapters,
+  { combatRandom: () => 0.5 },
+);
 
 describe('createBattleGame', () => {
   beforeEach(() => {

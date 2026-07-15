@@ -1,4 +1,5 @@
 import type { CombatEvent, CombatSnapshot, CombatBalance } from '../types';
+import type { RandomSource } from '../equipment/equipmentTypes';
 import type { ProgressionSnapshot } from '../progression/progressionTypes';
 
 export type CampaignMode = 'farming' | 'breakthrough' | 'boss' | 'campaign-complete';
@@ -34,6 +35,10 @@ export interface CampaignSnapshot {
   encounter: EncounterDefinition | null;
   progression: ProgressionSnapshot;
   combat: CombatSnapshot | null;
+}
+
+export interface CampaignControllerOptions {
+  readonly combatRandom?: RandomSource;
 }
 
 export interface CampaignController {

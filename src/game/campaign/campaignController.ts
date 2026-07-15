@@ -1,10 +1,11 @@
 import { createCombatEngine } from '../combatEngine';
-import { getEncounterXp } from '../balance';
+import { EQUIPMENT_BALANCE, getEncounterXp } from '../balance';
 import { createProgressionController } from '../progression/progressionController';
-import type { CombatEngine, CombatEvent } from '../types';
+import type { CombatEngine, CombatEvent, PlayerCombatProfile, PlayerStats } from '../types';
 import { CHAPTERS, getChapter } from './campaignDefinitions';
 import type {
   CampaignController,
+  CampaignControllerOptions,
   CampaignMode,
   CampaignSnapshot,
   ChapterDefinition,
@@ -12,6 +13,11 @@ import type {
 } from './campaignTypes';
 
 const activeModes: ReadonlySet<CampaignMode> = new Set(['farming', 'breakthrough', 'boss']);
+
+const toBaseCombatProfile = (stats: Readonly<PlayerStats>): PlayerCombatProfile => ({
+  ...stats,
+  ...EQUIPMENT_BALANCE.combatDefaults,
+});
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   typeof value === 'object' && value !== null
@@ -85,6 +91,7 @@ const hasOrderedEncounters = (chapters: readonly ChapterDefinition[]): boolean =
 
 export const createCampaignController = (
   chapters: readonly ChapterDefinition[] = CHAPTERS,
+  options: CampaignControllerOptions = {},
 ): CampaignController => {
   if (!hasOrderedEncounters(chapters)) {
     throw new Error('Campaign must contain 36 ordered chapters');
@@ -109,6 +116,9 @@ export const createCampaignController = (
         defense: stats.defense,
         maxHp: stats.maxHp,
       },
+    }, {
+      random: options.combatRandom ?? Math.random,
+      monsterDamageKind: definition.kind === 'boss' ? 'boss' : 'normal',
     });
     mode = nextMode;
   };
@@ -124,7 +134,7 @@ export const createCampaignController = (
     const death = events.find((event) => event.type === 'death');
     if (death?.actor === 'enemy' && encounter !== null) {
       progression.awardXp(getEncounterXp(chapter.number, encounter.kind));
-      engine.applyPlayerStats(progression.getSnapshot().stats);
+      engine.applyPlayerStats(toBaseCombatProfile(progression.getSnapshot().stats));
     }
     if (death === undefined || mode === 'farming') return events;
 
