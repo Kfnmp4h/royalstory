@@ -29,6 +29,26 @@ const legendaryAttackSpeedRolls = (slotIndex: number) => [
 ];
 
 describe('createEquipmentController', () => {
+  it('restores inventory, equipped items, and the next item ID', () => {
+    const original = createEquipmentController(scriptedRandom(
+      ...normalItemRolls(6),
+      ...normalItemRolls(0),
+    ));
+    const gloves = original.rollDrop('boss', 10)!;
+    original.rollDrop('boss', 12);
+    original.equip(gloves.id);
+
+    const restored = createEquipmentController({
+      initialState: original.getPersistentState(),
+      random: scriptedRandom(...normalItemRolls(1)),
+    });
+    const snapshot = restored.getSnapshot(BASE_STATS);
+
+    expect(snapshot.equipped.Gloves?.id).toBe(gloves.id);
+    expect(snapshot.inventory).toHaveLength(1);
+    expect(restored.rollDrop('boss', 15)?.id).toBe('item-3');
+  });
+
   it('starts with fourteen frozen empty slots and base effective stats', () => {
     const snapshot = createEquipmentController(() => 0).getSnapshot(BASE_STATS);
     expect(Object.keys(snapshot.equipped)).toEqual(EQUIPMENT_SLOTS);

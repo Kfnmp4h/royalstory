@@ -88,10 +88,23 @@ export interface EquipmentSnapshot {
   readonly heroPower: number;
 }
 
+export interface EquipmentPersistentState {
+  readonly inventory: readonly EquipmentItem[];
+  readonly equipped: EquippedItems;
+  readonly latestDropId: string | null;
+  readonly nextItemNumber: number;
+}
+
+export interface EquipmentControllerOptions {
+  readonly random?: RandomSource;
+  readonly initialState?: EquipmentPersistentState;
+}
+
 export interface EquipmentController {
   rollDrop(source: DropSource, itemLevel: number): EquipmentItem | null;
   equip(itemId: string): void;
   equipBest(): void;
   compare(itemId: string): ItemComparison;
   getSnapshot(baseStats: Readonly<PlayerStats>): EquipmentSnapshot;
+  getPersistentState(): EquipmentPersistentState;
 }

@@ -11,10 +11,12 @@ import {
   type DropSource,
   type EquippedItems,
   type EquipmentController,
+  type EquipmentControllerOptions,
   type EquipmentItem,
   type EquipmentSlot,
   type EquipmentStatKey,
   type EquipmentTotals,
+  type EquipmentPersistentState,
   type RandomSource,
 } from './equipmentTypes';
 import { rollEquipmentDrop } from './itemGenerator';
@@ -104,11 +106,22 @@ const selectWinner = (
     .sort((left, right) => left.id.localeCompare(right.id))[0];
 };
 
-export function createEquipmentController(random: RandomSource = Math.random): EquipmentController {
-  let inventory: EquipmentItem[] = [];
-  let equipped: MutableEquippedItems = createEmptyEquipped();
-  let latestDrop: EquipmentItem | null = null;
-  let nextItemNumber = 1;
+export function createEquipmentController(
+  randomOrOptions: RandomSource | EquipmentControllerOptions = Math.random,
+): EquipmentController {
+  const options = typeof randomOrOptions === 'function' ? { random: randomOrOptions } : randomOrOptions;
+  const random = options.random ?? Math.random;
+  const initial = options.initialState;
+  let inventory: EquipmentItem[] = initial ? sortInventory(initial.inventory) : [];
+  let equipped: MutableEquippedItems = initial
+    ? { ...createEmptyEquipped(), ...initial.equipped }
+    : createEmptyEquipped();
+  let latestDrop: EquipmentItem | null = initial?.latestDropId
+    ? [...inventory, ...Object.values(equipped)].find((item) => item?.id === initial.latestDropId) ?? null
+    : null;
+  let nextItemNumber = initial?.nextItemNumber ?? 1;
+  assertUniqueItems([...inventory, ...Object.values(equipped).filter((item): item is EquipmentItem => item !== null)]);
+  if (!Number.isInteger(nextItemNumber) || nextItemNumber < 1) throw new RangeError('Next item number must be a positive integer');
 
   const rollDrop = (source: DropSource, itemLevel: number): EquipmentItem | null => {
     const itemId = `item-${nextItemNumber}`;
@@ -191,5 +204,12 @@ export function createEquipmentController(random: RandomSource = Math.random): E
     });
   };
 
-  return { rollDrop, equip, equipBest, compare, getSnapshot };
+  const getPersistentState = (): EquipmentPersistentState => Object.freeze({
+    inventory: Object.freeze([...inventory]),
+    equipped: Object.freeze({ ...equipped }) as EquippedItems,
+    latestDropId: latestDrop?.id ?? null,
+    nextItemNumber,
+  });
+
+  return { rollDrop, equip, equipBest, compare, getSnapshot, getPersistentState };
 }
