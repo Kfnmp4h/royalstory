@@ -38,7 +38,7 @@ body {
 
 .app-shell {
   display: grid;
-  width: min(100%, 1180px);
+  width: min(100%, 1280px);
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0 auto;
@@ -169,7 +169,7 @@ button {
 
 .hero-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin: 0;
 }
@@ -202,6 +202,306 @@ button {
   margin: 0;
   color: #fff4bf;
   font-weight: 800;
+}
+
+.equipment-panel {
+  display: grid;
+  width: min(100%, 76rem);
+  min-width: 0;
+  margin-inline: auto;
+  gap: 18px;
+  padding: clamp(16px, 3vw, 28px);
+  border: 1px solid rgb(231 202 131 / 42%);
+  border-radius: 20px;
+  background:
+    linear-gradient(145deg, rgb(34 45 78 / 96%), rgb(15 24 49 / 98%));
+  box-shadow: 0 20px 55px rgb(0 0 0 / 32%);
+}
+
+.section-heading,
+.inventory-heading {
+  display: flex;
+  min-width: 0;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.section-heading h2,
+.inventory-heading h3,
+.comparison-panel h3 {
+  margin: 0;
+  color: #fffaf0;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.section-heading h2 {
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+}
+
+.section-heading > p,
+.inventory-heading span {
+  margin: 0;
+  color: #b9c6e5;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.equipment-stage {
+  display: grid;
+  min-width: 0;
+  grid-template-areas:
+    "hat cape ari top shoulder"
+    "bottom belt ari gloves shoes"
+    "ring ring2 ari necklace eye"
+    "face earring ari . .";
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgb(255 214 107 / 18%);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 50% 48%, rgb(255 214 107 / 12%), transparent 28%),
+    rgb(8 15 34 / 52%);
+}
+
+.equipment-slot,
+.ari-medallion,
+.inventory-item {
+  min-width: 0;
+  border-radius: 12px;
+}
+
+.equipment-slot {
+  display: grid;
+  min-height: 94px;
+  align-content: center;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid rgb(184 196 221 / 35%);
+  overflow-wrap: anywhere;
+  background: rgb(20 30 57 / 88%);
+}
+
+.equipment-slot[data-slot="Hat"] { grid-area: hat; }
+.equipment-slot[data-slot="Cape"] { grid-area: cape; }
+.equipment-slot[data-slot="Top"] { grid-area: top; }
+.equipment-slot[data-slot="Shoulder"] { grid-area: shoulder; }
+.equipment-slot[data-slot="Bottom"] { grid-area: bottom; }
+.equipment-slot[data-slot="Belt"] { grid-area: belt; }
+.equipment-slot[data-slot="Gloves"] { grid-area: gloves; }
+.equipment-slot[data-slot="Shoes"] { grid-area: shoes; }
+.equipment-slot[data-slot="Ring"] { grid-area: ring; }
+.equipment-slot[data-slot="Ring 2"] { grid-area: ring2; }
+.equipment-slot[data-slot="Necklace"] { grid-area: necklace; }
+.equipment-slot[data-slot="Eye"] { grid-area: eye; }
+.equipment-slot[data-slot="Face"] { grid-area: face; }
+.equipment-slot[data-slot="Earring"] { grid-area: earring; }
+
+.slot-name,
+.item-rarity {
+  font-size: 0.67rem;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.slot-name {
+  color: #aebbd9;
+}
+
+.equipment-slot strong,
+.inventory-item strong {
+  overflow-wrap: anywhere;
+  color: #fff;
+  font-size: 0.82rem;
+}
+
+.equipment-slot > span:last-child,
+.inventory-item > span:last-child,
+.empty-label {
+  color: #bdc8df;
+  font-size: 0.7rem;
+}
+
+.ari-medallion {
+  grid-area: ari;
+  display: grid;
+  min-height: 100%;
+  place-content: center;
+  place-items: center;
+  gap: 6px;
+  padding: 16px 8px;
+  border: 2px solid #ffd66b;
+  color: #fff4bf;
+  text-align: center;
+  background:
+    radial-gradient(circle, rgb(95 119 177 / 76%), rgb(30 42 78 / 96%) 66%);
+  box-shadow: inset 0 0 30px rgb(255 214 107 / 12%);
+}
+
+.ari-medallion strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
+}
+
+.ari-medallion span:not(.ari-crown) {
+  color: #d9e2f5;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.ari-crown {
+  color: #ffd66b;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.rarity-normal { border-color: #9aa6b8; }
+.rarity-normal .item-rarity { color: #c6ced9; }
+.rarity-rare { border-color: #61a9ff; }
+.rarity-rare .item-rarity { color: #83bcff; }
+.rarity-epic { border-color: #c887ff; }
+.rarity-epic .item-rarity { color: #d8a9ff; }
+.rarity-unique { border-color: #ffad5c; }
+.rarity-unique .item-rarity { color: #ffc17f; }
+.rarity-legendary { border-color: #ffd84d; box-shadow: inset 0 0 18px rgb(255 216 77 / 10%); }
+.rarity-legendary .item-rarity { color: #ffe374; }
+
+.primary-action {
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 2px solid #fff1bd;
+  border-radius: 10px;
+  color: #101a33;
+  background: #ffd66b;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.primary-action:hover {
+  background: #fff1bd;
+}
+
+.equip-best {
+  width: min(100%, 17rem);
+  justify-self: center;
+}
+
+.inventory-panel {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+}
+
+.inventory-grid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: 9px;
+}
+
+.inventory-item {
+  display: grid;
+  min-height: 76px;
+  align-content: center;
+  gap: 2px;
+  padding: 10px 12px;
+  border-width: 1px;
+  border-style: solid;
+  color: #fff;
+  text-align: left;
+  background: rgb(10 18 39 / 76%);
+  cursor: pointer;
+}
+
+.inventory-item:hover,
+.inventory-item.is-selected {
+  background: rgb(47 61 104 / 92%);
+}
+
+.inventory-item.is-selected {
+  box-shadow: 0 0 0 2px #fff1bd;
+}
+
+.empty-inventory {
+  margin: 0;
+  padding: 16px;
+  border: 1px dashed rgb(184 196 221 / 34%);
+  border-radius: 12px;
+  color: #b9c6e5;
+  text-align: center;
+}
+
+.comparison-panel {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #8fa2c9;
+  border-left-width: 5px;
+  border-radius: 14px;
+  background: rgb(10 18 39 / 78%);
+}
+
+.comparison-panel p {
+  margin: 4px 0 0;
+  color: #bbc7df;
+  font-size: 0.78rem;
+}
+
+.comparison-panel .comparison-result {
+  margin: 0 0 4px;
+  font-weight: 850;
+}
+
+.comparison-positive { border-left-color: #73d69c; }
+.comparison-positive .comparison-result { color: #8ee8b2; }
+.comparison-neutral { border-left-color: #c3ccdc; }
+.comparison-neutral .comparison-result { color: #dbe2ee; }
+.comparison-negative { border-left-color: #ff8e98; }
+.comparison-negative .comparison-result { color: #ffabb2; }
+
+.comparison-stats {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px 12px;
+  margin: 0;
+}
+
+.comparison-stats div {
+  display: flex;
+  min-width: 0;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.comparison-stats dt {
+  overflow-wrap: anywhere;
+  color: #aebbd9;
+  font-size: 0.69rem;
+}
+
+.comparison-stats dd {
+  margin: 0;
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.drop-message {
+  margin: 0;
+  padding: 11px 14px;
+  border: 1px solid #ffd66b;
+  border-radius: 11px;
+  color: #fff4bf;
+  font-weight: 800;
+  text-align: center;
+  background: rgb(87 67 22 / 52%);
 }
 
 .battle-card {
@@ -293,6 +593,51 @@ button {
 
   .diagnostics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hero-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .section-heading,
+  .inventory-heading {
+    align-items: start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .equipment-stage {
+    grid-template-areas: none;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 8px;
+  }
+
+  .ari-medallion,
+  .equipment-slot[data-slot] {
+    grid-area: auto;
+  }
+
+  .ari-medallion {
+    min-height: 150px;
+    order: -1;
+  }
+
+  .equipment-slot {
+    min-height: 78px;
+  }
+
+  .equip-best {
+    width: 100%;
+  }
+
+  .inventory-grid,
+  .comparison-panel,
+  .comparison-stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .comparison-panel .primary-action {
+    width: 100%;
   }
 
   .status-chip,

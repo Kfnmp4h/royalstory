@@ -1,9 +1,10 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BattleStatus } from './game/phaser/battleGame';
 import { getChapter } from './game/campaign/campaignDefinitions';
 import { createEquipmentController } from './game/equipment/equipmentController';
+import type { EquipmentItem } from './game/equipment/equipmentTypes';
 import appSource from './App?raw';
 
 const battleGame = vi.hoisted(() => ({
@@ -12,6 +13,8 @@ const battleGame = vi.hoisted(() => ({
   setPaused: vi.fn(),
   startBreakthrough: vi.fn(),
   startBoss: vi.fn(),
+  equip: vi.fn(),
+  equipBest: vi.fn(),
 }));
 
 vi.mock('./game/phaser/battleGame', () => ({
@@ -31,6 +34,42 @@ const emptyEquipment = createEquipmentController(() => 0).getSnapshot({
   defense: 2,
   maxHp: 120,
 });
+
+const equippedGloves: EquipmentItem = {
+  id: 'item-1',
+  slot: 'Gloves',
+  level: 8,
+  rarity: 'Rare',
+  name: 'Rare Gloves',
+  mainStats: { attack: 3, defense: 2, maxHp: 10 },
+  substats: [{ type: 'accuracy', value: 2 }],
+  power: 76,
+};
+
+const epicGloves: EquipmentItem = {
+  id: 'item-2',
+  slot: 'Gloves',
+  level: 10,
+  rarity: 'Epic',
+  name: 'Epic Gloves',
+  mainStats: { attack: 4, defense: 3, maxHp: 20 },
+  substats: [
+    { type: 'criticalRate', value: 3 },
+    { type: 'attackSpeed', value: 2 },
+  ],
+  power: 118,
+};
+
+const rareHat: EquipmentItem = {
+  id: 'item-3',
+  slot: 'Hat',
+  level: 9,
+  rarity: 'Rare',
+  name: 'Rare Hat',
+  mainStats: { attack: 3, defense: 2, maxHp: 14 },
+  substats: [{ type: 'maxHp', value: 4 }],
+  power: 90,
+};
 
 const runningStatus: BattleStatus = {
   state: 'running',
@@ -88,6 +127,35 @@ const runningStatus: BattleStatus = {
   },
 };
 
+const equipmentStatus: BattleStatus = {
+  ...runningStatus,
+  snapshot: {
+    ...runningStatus.snapshot,
+    equipment: {
+      ...emptyEquipment,
+      inventory: [epicGloves, rareHat],
+      equipped: { ...emptyEquipment.equipped, Gloves: equippedGloves },
+      latestDrop: epicGloves,
+      totals: {
+        ...emptyEquipment.totals,
+        attack: 3,
+        defense: 2,
+        maxHp: 10,
+        accuracy: 2,
+      },
+      equipmentPower: 76,
+      effectiveStats: {
+        ...emptyEquipment.effectiveStats,
+        attack: 21,
+        defense: 4,
+        maxHp: 130,
+        accuracy: 2,
+      },
+      heroPower: 332,
+    },
+  },
+};
+
 const unlockedFarmingStatus: BattleStatus = {
   ...runningStatus,
   snapshot: {
@@ -130,6 +198,8 @@ describe('App', () => {
         setPaused: battleGame.setPaused,
         startBreakthrough: battleGame.startBreakthrough,
         startBoss: battleGame.startBoss,
+        equip: battleGame.equip,
+        equipBest: battleGame.equipBest,
       };
     });
   });
@@ -141,7 +211,7 @@ describe('App', () => {
   it('introduces the RoyalStory combat sandbox', () => {
     render(<App />);
     expect(screen.getByRole('heading', { name: 'RoyalStory' })).toBeInTheDocument();
-    expect(screen.getByText('Milestone 3 · Progression Sandbox')).toBeInTheDocument();
+    expect(screen.getByText('Milestone 5 · Equipment Frontier')).toBeInTheDocument();
   });
 
   it('shows level, XP, and all three base stats', () => {
@@ -210,6 +280,8 @@ describe('App', () => {
         setPaused: battleGame.setPaused,
         startBreakthrough: battleGame.startBreakthrough,
         startBoss: battleGame.startBoss,
+        equip: battleGame.equip,
+        equipBest: battleGame.equipBest,
       };
     });
 
@@ -253,6 +325,8 @@ describe('App', () => {
         setPaused: battleGame.setPaused,
         startBreakthrough: battleGame.startBreakthrough,
         startBoss: battleGame.startBoss,
+        equip: battleGame.equip,
+        equipBest: battleGame.equipBest,
       };
     });
 
@@ -330,14 +404,14 @@ describe('App', () => {
       snapshot: { ...runningStatus.snapshot, mode: 'breakthrough', encounter: getChapter(1).breakthrough },
     }));
     expect(screen.getByText('Breakthrough')).toBeInTheDocument();
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'Campaign progress' })).queryByRole('button')).not.toBeInTheDocument();
 
     act(() => callbacks.onStatus({
       ...runningStatus,
       snapshot: { ...runningStatus.snapshot, mode: 'boss', encounter: getChapter(1).boss },
     }));
     expect(screen.getByText('Boss battle')).toBeInTheDocument();
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'Campaign progress' })).queryByRole('button')).not.toBeInTheDocument();
   });
 
   it('shows no campaign action after completing the campaign', () => {
@@ -345,7 +419,7 @@ describe('App', () => {
 
     act(() => callbacks.onStatus(campaignCompleteStatus));
 
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'Campaign progress' })).queryByRole('button')).not.toBeInTheDocument();
     expect(screen.getByText('Campaign complete')).toBeInTheDocument();
   });
 
@@ -354,6 +428,65 @@ describe('App', () => {
 
     act(() => callbacks.onStatus(unlockedFarmingStatus));
     act(() => callbacks.onStatus(campaignCompleteStatus));
+
+    expect(battleGame.createBattleGame).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders effective hero stats, total power, and all fourteen equipment slots', () => {
+    render(<App />);
+    act(() => callbacks.onStatus(equipmentStatus));
+
+    const equipment = screen.getByRole('region', { name: 'Equipment' });
+    expect(within(equipment).getAllByRole('group', { name: /equipment slot/i })).toHaveLength(14);
+    expect(within(equipment).getByRole('group', { name: 'Gloves equipment slot' })).toHaveTextContent('Rare Gloves');
+    expect(within(equipment).getByRole('group', { name: 'Ring equipment slot' })).toHaveTextContent('Empty');
+    expect(within(equipment).getByRole('group', { name: 'Ring 2 equipment slot' })).toHaveTextContent('Empty');
+    expect(screen.getByText('Total Power')).toBeInTheDocument();
+    expect(screen.getByText('332')).toBeInTheDocument();
+    expect(screen.getByText('21', { selector: 'dd' })).toBeInTheDocument();
+    expect(screen.getByText('4', { selector: 'dd' })).toBeInTheDocument();
+    expect(screen.getByText('130', { selector: 'dd' })).toBeInTheDocument();
+  });
+
+  it('orders inventory, compares a selection, and forwards equipment commands', () => {
+    render(<App />);
+    act(() => callbacks.onStatus(equipmentStatus));
+
+    const inventory = screen.getByRole('region', { name: 'Inventory' });
+    const itemButtons = within(inventory).getAllByRole('button');
+    expect(itemButtons[0]).toHaveAccessibleName(/Epic Gloves.*Power 118/i);
+    expect(itemButtons[1]).toHaveAccessibleName(/Rare Hat.*Power 90/i);
+
+    fireEvent.click(itemButtons[0]!);
+    expect(screen.getByText('Upgrade +42 power')).toBeInTheDocument();
+    expect(screen.getByText('Critical Rate').closest('div')).toHaveTextContent(/Critical Rate\s*\+3%/);
+    expect(screen.getByText('Attack Speed').closest('div')).toHaveTextContent(/Attack Speed\s*\+2%/);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Equip selected' }));
+    expect(battleGame.equip).toHaveBeenCalledWith('item-2');
+    fireEvent.click(screen.getByRole('button', { name: 'Equip Best' }));
+    expect(battleGame.equipBest).toHaveBeenCalledOnce();
+  });
+
+  it('announces the latest drop and keeps one Phaser game through equipment-only updates', () => {
+    render(<App />);
+
+    act(() => callbacks.onStatus(equipmentStatus));
+    expect(screen.getByRole('status', { name: 'Latest equipment drop' })).toHaveTextContent(
+      'New drop: Epic Gloves, level 10, power 118',
+    );
+
+    act(() => callbacks.onStatus({
+      ...equipmentStatus,
+      snapshot: {
+        ...equipmentStatus.snapshot,
+        equipment: {
+          ...equipmentStatus.snapshot.equipment,
+          inventory: [rareHat],
+          equipped: { ...equipmentStatus.snapshot.equipment.equipped, Gloves: epicGloves },
+        },
+      },
+    }));
 
     expect(battleGame.createBattleGame).toHaveBeenCalledTimes(1);
   });
