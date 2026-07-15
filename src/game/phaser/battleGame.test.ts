@@ -72,6 +72,14 @@ describe('createBattleGame', () => {
       BattleScene.prototype as BattleScene & { startBoss(): void },
       'startBoss',
     ).mockImplementation(() => setCampaignCommand('boss'));
+    const equip = vi.spyOn(
+      BattleScene.prototype as BattleScene & { equip(itemId: string): void },
+      'equip',
+    ).mockImplementation((itemId) => setCampaignCommand(`equip:${itemId}`));
+    const equipBest = vi.spyOn(
+      BattleScene.prototype as BattleScene & { equipBest(): void },
+      'equipBest',
+    ).mockImplementation(() => setCampaignCommand('equip-best'));
     const controller = createBattleGame({
       parent,
       onStatus: vi.fn(),
@@ -115,6 +123,14 @@ describe('createBattleGame', () => {
     expect(setCampaignCommand).toHaveBeenLastCalledWith('boss');
     expect(startBoss.mock.contexts.at(-1)).toBe(registeredScene);
 
+    expect(() => controller.equip('item-7')).not.toThrow();
+    expect(setCampaignCommand).toHaveBeenLastCalledWith('equip:item-7');
+    expect(equip.mock.contexts.at(-1)).toBe(registeredScene);
+
+    expect(() => controller.equipBest()).not.toThrow();
+    expect(setCampaignCommand).toHaveBeenLastCalledWith('equip-best');
+    expect(equipBest.mock.contexts.at(-1)).toBe(registeredScene);
+
     controller.destroy();
     controller.destroy();
     expect(phaserBoundary.destroy).toHaveBeenCalledTimes(1);
@@ -122,7 +138,44 @@ describe('createBattleGame', () => {
 
     controller.startBreakthrough();
     controller.startBoss();
-    expect(setCampaignCommand).toHaveBeenCalledTimes(2);
+    controller.equip('item-8');
+    controller.equipBest();
+    expect(setCampaignCommand).toHaveBeenCalledTimes(4);
+  });
+
+  it('forwards equipment commands through the campaign and publishes the fresh snapshot', () => {
+    const onStatus = vi.fn();
+    const onError = vi.fn();
+    const scene = new BattleScene(onStatus, onError);
+    const initialSnapshot = createCampaignController().getSnapshot();
+    const equippedSnapshot = {
+      ...initialSnapshot,
+      equipment: { ...initialSnapshot.equipment, heroPower: initialSnapshot.equipment.heroPower + 10 },
+    };
+    const campaign = {
+      advance: vi.fn(() => []),
+      pause: vi.fn(() => []),
+      resume: vi.fn(() => []),
+      startBreakthrough: vi.fn(),
+      startBoss: vi.fn(),
+      equip: vi.fn(),
+      equipBest: vi.fn(),
+      getSnapshot: vi.fn(() => equippedSnapshot),
+    } satisfies CampaignController;
+    Object.assign(scene, {
+      campaign,
+      ready: true,
+      renderCampaign: vi.fn(),
+    });
+
+    scene.equip('item-7');
+    scene.equipBest();
+
+    expect(campaign.equip).toHaveBeenCalledWith('item-7');
+    expect(campaign.equipBest).toHaveBeenCalledOnce();
+    expect(onStatus).toHaveBeenNthCalledWith(1, { snapshot: equippedSnapshot, state: 'running' });
+    expect(onStatus).toHaveBeenNthCalledWith(2, { snapshot: equippedSnapshot, state: 'running' });
+    expect(onError).not.toHaveBeenCalled();
   });
 
   it('redraws the enemy when the campaign visual name changes', () => {
@@ -524,5 +577,55 @@ describe('createBattleGame', () => {
 
     expect(phaserBoundary.shake).toHaveBeenCalledOnce();
     expect(phaserBoundary.shake).toHaveBeenCalledWith(80, 0.002);
+  });
+
+  it('shows MISS at the target without shaking the camera', () => {
+    const scene = new BattleScene(vi.fn(), vi.fn());
+    Object.assign(scene, { enemyContainer: { x: 690, y: 414 } });
+
+    (scene as unknown as {
+      animateEvent(event: { type: 'miss'; attacker: 'player'; target: 'enemy' }): void;
+    }).animateEvent({ type: 'miss', attacker: 'player', target: 'enemy' });
+
+    expect(phaserBoundary.text).toHaveBeenCalledWith(
+      690,
+      282,
+      'MISS',
+      expect.objectContaining({ color: '#e8f2ff', fontStyle: 'bold' }),
+    );
+    expect(phaserBoundary.shake).not.toHaveBeenCalled();
+    expect(phaserBoundary.addTween).toHaveBeenCalledWith(expect.objectContaining({
+      alpha: 0,
+      duration: 460,
+    }));
+  });
+
+  it('shows CRITICAL and gives its following damage distinct feedback', () => {
+    const scene = new BattleScene(vi.fn(), vi.fn());
+    Object.assign(scene, { enemyContainer: { x: 690, y: 414 } });
+    const animatingScene = scene as unknown as {
+      animateEvent(event:
+        | { type: 'critical'; attacker: 'player'; target: 'enemy' }
+        | { type: 'damage'; target: 'enemy'; amount: number; hp: number }): void;
+    };
+
+    animatingScene.animateEvent({ type: 'critical', attacker: 'player', target: 'enemy' });
+    animatingScene.animateEvent({ type: 'damage', target: 'enemy', amount: 24, hp: 56 });
+
+    expect(phaserBoundary.text).toHaveBeenNthCalledWith(
+      1,
+      690,
+      256,
+      'CRITICAL',
+      expect.objectContaining({ color: '#ffe083', fontStyle: 'bold' }),
+    );
+    expect(phaserBoundary.text).toHaveBeenNthCalledWith(
+      2,
+      690,
+      282,
+      '-24',
+      expect.objectContaining({ color: '#fff0a8', fontSize: '31px' }),
+    );
+    expect(phaserBoundary.shake).toHaveBeenLastCalledWith(110, 0.0035);
   });
 });

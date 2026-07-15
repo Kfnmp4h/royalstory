@@ -25,6 +25,7 @@ export class BattleScene extends Phaser.Scene {
   private renderedChapterNumber?: number;
   private pendingEnemyVisual?: EncounterVisual;
   private enemyDeathFeedbackActive = false;
+  private nextPlayerDamageCritical = false;
   private ready = false;
   private failed = false;
 
@@ -89,6 +90,28 @@ export class BattleScene extends Phaser.Scene {
 
     try {
       this.campaign.startBoss();
+      this.renderAndPublish(this.campaign.getSnapshot());
+    } catch (error) {
+      this.fail(error);
+    }
+  }
+
+  equip(itemId: string): void {
+    if (this.failed) return;
+
+    try {
+      this.campaign.equip(itemId);
+      this.renderAndPublish(this.campaign.getSnapshot());
+    } catch (error) {
+      this.fail(error);
+    }
+  }
+
+  equipBest(): void {
+    if (this.failed) return;
+
+    try {
+      this.campaign.equipBest();
       this.renderAndPublish(this.campaign.getSnapshot());
     } catch (error) {
       this.fail(error);
@@ -362,11 +385,13 @@ export class BattleScene extends Phaser.Scene {
       case 'damage': {
         const target = this.getContainer(event.target);
         if (!target) return;
-        this.cameras.main.shake(80, 0.002);
+        const critical = event.target === 'enemy' && this.nextPlayerDamageCritical;
+        this.nextPlayerDamageCritical = false;
+        this.cameras.main.shake(critical ? 110 : 80, critical ? 0.0035 : 0.002);
         const damageText = this.add.text(target.x, target.y - 132, `-${event.amount}`, {
-          color: '#ffdf72',
+          color: critical ? '#fff0a8' : '#ffdf72',
           fontFamily: 'Arial, sans-serif',
-          fontSize: '25px',
+          fontSize: critical ? '31px' : '25px',
           fontStyle: 'bold',
           stroke: '#73363a',
           strokeThickness: 5,
@@ -385,6 +410,49 @@ export class BattleScene extends Phaser.Scene {
           duration: 55,
           yoyo: true,
           repeat: 1,
+        });
+        return;
+      }
+      case 'miss': {
+        const target = this.getContainer(event.target);
+        if (!target) return;
+        const missText = this.add.text(target.x, target.y - 132, 'MISS', {
+          color: '#e8f2ff',
+          fontFamily: 'Arial, sans-serif',
+          fontSize: '21px',
+          fontStyle: 'bold',
+          stroke: '#38516b',
+          strokeThickness: 4,
+        }).setOrigin(0.5).setDepth(30);
+        this.tweens.add({
+          targets: missText,
+          y: missText.y - 28,
+          alpha: 0,
+          duration: 460,
+          ease: 'Cubic.Out',
+          onComplete: () => missText.destroy(),
+        });
+        return;
+      }
+      case 'critical': {
+        const target = this.getContainer(event.target);
+        if (!target) return;
+        this.nextPlayerDamageCritical = true;
+        const criticalText = this.add.text(target.x, target.y - 158, 'CRITICAL', {
+          color: '#ffe083',
+          fontFamily: 'Arial, sans-serif',
+          fontSize: '22px',
+          fontStyle: 'bold',
+          stroke: '#7a3e24',
+          strokeThickness: 5,
+        }).setOrigin(0.5).setDepth(31);
+        this.tweens.add({
+          targets: criticalText,
+          y: criticalText.y - 24,
+          alpha: 0,
+          duration: 620,
+          ease: 'Cubic.Out',
+          onComplete: () => criticalText.destroy(),
         });
         return;
       }

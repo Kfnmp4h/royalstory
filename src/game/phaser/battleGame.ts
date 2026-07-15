@@ -6,6 +6,8 @@ export interface BattleController {
   setPaused(paused: boolean): void;
   startBreakthrough(): void;
   startBoss(): void;
+  equip(itemId: string): void;
+  equipBest(): void;
   destroy(): void;
 }
 
@@ -51,6 +53,14 @@ export function createBattleGame({
     startBoss() {
       if (destroyed) return;
       battleScene.startBoss();
+    },
+    equip(itemId) {
+      if (destroyed) return;
+      battleScene.equip(itemId);
+    },
+    equipBest() {
+      if (destroyed) return;
+      battleScene.equipBest();
     },
     destroy() {
       if (destroyed) return;
