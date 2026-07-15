@@ -1,6 +1,6 @@
-# RoyalStory Combat Sandbox
+# RoyalStory Equipment Sandbox
 
-RoyalStory Milestone 3 is a local, responsive campaign sandbox. React provides the page and campaign controls, Phaser draws the battle scene, and a pure TypeScript engine owns combat state.
+RoyalStory Milestone 5 is a responsive campaign and equipment sandbox. React presents Ari's progression and loadout, Phaser draws the automatic battles, and pure TypeScript controllers own combat, campaign, and equipment state.
 
 ## Requirements
 
@@ -24,16 +24,19 @@ pnpm typecheck
 pnpm build
 ```
 
-## Milestone 3 features
+## Milestone 5 features
 
-- Automatic XP from farming enemies, breakthrough Sentinels, and chapter bosses.
-- Deterministic level progression from 1 to 200 with overflow XP.
-- ATK, DEF, and max-HP scale from one central balance entrypoint and affect live combat.
-- A responsive Hero panel shows level, XP, ATK, DEF, and HP while Phaser combat continues.
-- Central equipment metadata defines 14 slots, item levels 1–200, and five rarities for Milestone 5.
+- Automatic XP from farming enemies, breakthrough Sentinels, and chapter bosses across 36 chapters.
+- Deterministic level progression from 1 to 200 with overflow XP and live ATK, DEF, and Max HP growth.
+- Equipment drops with Normal, Rare, Epic, Unique, and Legendary rarities.
+- Fourteen fixed slots: Hat, Cape, Top, Shoulder, Bottom, Belt, Gloves, Shoes, Ring, Ring 2, Necklace, Eye, Face, and Earring.
+- Every item has ATK, DEF, and Max HP main stats plus rarity-based substats.
+- All approved equipment stats affect live combat, including Accuracy, Evasion, critical hits, Attack Speed, Damage, Boss Monster Damage, and Normal Monster Damage.
+- A Character First interface with effective hero stats, Total Power, inventory comparison, manual equip, and Equip Best.
+- Accessible visual feedback for new drops, misses, and critical hits.
 
-## Milestone 3 boundaries
+## Session-only equipment
 
-Progression exists only in memory and resets on reload. This milestone has no browser persistence, accounts, server syncing, offline progress, skills, item generation, inventory, or currencies.
+Progression, equipment, and inventory exist only in memory for the current browser session and reset on reload. Permanent saving is planned for Milestone 6. The current milestone does not use browser storage, cookies, filesystem saves, accounts, server syncing, or offline progress.
 
-All visuals are original and code-drawn.
+Milestone 5 does not include currencies, skills, item deletion, enhancement, or permanent persistence. All visuals are original and code-drawn.
