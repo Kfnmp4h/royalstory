@@ -1,5 +1,5 @@
 import type { CombatEvent, CombatSnapshot, CombatBalance } from '../types';
-import type { RandomSource } from '../equipment/equipmentTypes';
+import type { EquipmentSnapshot, RandomSource } from '../equipment/equipmentTypes';
 import type { ProgressionSnapshot } from '../progression/progressionTypes';
 
 export type CampaignMode = 'farming' | 'breakthrough' | 'boss' | 'campaign-complete';
@@ -34,11 +34,13 @@ export interface CampaignSnapshot {
   unlockedChapter: number;
   encounter: EncounterDefinition | null;
   progression: ProgressionSnapshot;
+  equipment: EquipmentSnapshot;
   combat: CombatSnapshot | null;
 }
 
 export interface CampaignControllerOptions {
   readonly combatRandom?: RandomSource;
+  readonly equipmentRandom?: RandomSource;
 }
 
 export interface CampaignController {
@@ -47,5 +49,7 @@ export interface CampaignController {
   resume(): CombatEvent[];
   startBreakthrough(): void;
   startBoss(): void;
+  equip(itemId: string): void;
+  equipBest(): void;
   getSnapshot(): CampaignSnapshot;
 }

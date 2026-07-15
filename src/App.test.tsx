@@ -3,6 +3,7 @@ import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BattleStatus } from './game/phaser/battleGame';
 import { getChapter } from './game/campaign/campaignDefinitions';
+import { createEquipmentController } from './game/equipment/equipmentController';
 import appSource from './App?raw';
 
 const battleGame = vi.hoisted(() => ({
@@ -25,6 +26,12 @@ interface GameCallbacks {
   onError: (error: Error) => void;
 }
 
+const emptyEquipment = createEquipmentController(() => 0).getSnapshot({
+  attack: 18,
+  defense: 2,
+  maxHp: 120,
+});
+
 const runningStatus: BattleStatus = {
   state: 'running',
   snapshot: {
@@ -40,6 +47,7 @@ const runningStatus: BattleStatus = {
       totalXp: 0,
       stats: { attack: 18, defense: 2, maxHp: 120 },
     },
+    equipment: emptyEquipment,
     combat: {
       phase: 'fighting',
       paused: false,
@@ -103,6 +111,7 @@ const campaignCompleteStatus: BattleStatus = {
       totalXp: 0,
       stats: { attack: 18, defense: 2, maxHp: 120 },
     },
+    equipment: emptyEquipment,
     combat: null,
   },
 };

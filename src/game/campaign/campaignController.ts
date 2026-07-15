@@ -1,7 +1,8 @@
 import { createCombatEngine } from '../combatEngine';
-import { EQUIPMENT_BALANCE, getEncounterXp } from '../balance';
+import { getEncounterXp } from '../balance';
+import { createEquipmentController } from '../equipment/equipmentController';
 import { createProgressionController } from '../progression/progressionController';
-import type { CombatEngine, CombatEvent, PlayerCombatProfile, PlayerStats } from '../types';
+import type { CombatEngine, CombatEvent } from '../types';
 import { CHAPTERS, getChapter } from './campaignDefinitions';
 import type {
   CampaignController,
@@ -13,11 +14,6 @@ import type {
 } from './campaignTypes';
 
 const activeModes: ReadonlySet<CampaignMode> = new Set(['farming', 'breakthrough', 'boss']);
-
-const toBaseCombatProfile = (stats: Readonly<PlayerStats>): PlayerCombatProfile => ({
-  ...stats,
-  ...EQUIPMENT_BALANCE.combatDefaults,
-});
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   typeof value === 'object' && value !== null
@@ -104,22 +100,25 @@ export const createCampaignController = (
   let encounter: EncounterDefinition | null;
   let engine: CombatEngine | null;
   const progression = createProgressionController();
+  const equipment = createEquipmentController(options.equipmentRandom ?? Math.random);
 
   const startEncounter = (definition: EncounterDefinition, nextMode: CampaignMode) => {
     const stats = progression.getSnapshot().stats;
+    const profile = equipment.getSnapshot(stats).effectiveStats;
     encounter = definition;
     engine = createCombatEngine({
       ...definition.balance,
       player: {
         ...definition.balance.player,
-        attack: stats.attack,
-        defense: stats.defense,
-        maxHp: stats.maxHp,
+        attack: profile.attack,
+        defense: profile.defense,
+        maxHp: profile.maxHp,
       },
     }, {
       random: options.combatRandom ?? Math.random,
       monsterDamageKind: definition.kind === 'boss' ? 'boss' : 'normal',
     });
+    engine.applyPlayerStats(profile);
     mode = nextMode;
   };
 
@@ -134,7 +133,9 @@ export const createCampaignController = (
     const death = events.find((event) => event.type === 'death');
     if (death?.actor === 'enemy' && encounter !== null) {
       progression.awardXp(getEncounterXp(chapter.number, encounter.kind));
-      engine.applyPlayerStats(toBaseCombatProfile(progression.getSnapshot().stats));
+      const progressionSnapshot = progression.getSnapshot();
+      equipment.rollDrop(encounter.kind, progressionSnapshot.level);
+      engine.applyPlayerStats(equipment.getSnapshot(progressionSnapshot.stats).effectiveStats);
     }
     if (death === undefined || mode === 'farming') return events;
 
@@ -165,15 +166,25 @@ export const createCampaignController = (
     return events;
   };
 
-  const getSnapshot = (): CampaignSnapshot => ({
-    mode,
-    bossUnlocked,
-    chapter,
-    unlockedChapter,
-    encounter,
-    progression: progression.getSnapshot(),
-    combat: engine?.getSnapshot() ?? null,
-  });
+  const applyEquipmentProfile = (): void => {
+    if (engine === null) return;
+    const progressionSnapshot = progression.getSnapshot();
+    engine.applyPlayerStats(equipment.getSnapshot(progressionSnapshot.stats).effectiveStats);
+  };
+
+  const getSnapshot = (): CampaignSnapshot => {
+    const progressionSnapshot = progression.getSnapshot();
+    return {
+      mode,
+      bossUnlocked,
+      chapter,
+      unlockedChapter,
+      encounter,
+      progression: progressionSnapshot,
+      equipment: equipment.getSnapshot(progressionSnapshot.stats),
+      combat: engine?.getSnapshot() ?? null,
+    };
+  };
 
   return {
     advance,
@@ -184,6 +195,14 @@ export const createCampaignController = (
     },
     startBoss: () => {
       if (mode === 'farming' && bossUnlocked) startEncounter(chapter.boss, 'boss');
+    },
+    equip: (itemId: string) => {
+      equipment.equip(itemId);
+      applyEquipmentProfile();
+    },
+    equipBest: () => {
+      equipment.equipBest();
+      applyEquipmentProfile();
     },
     getSnapshot,
   };

@@ -4,7 +4,7 @@ import { createCampaignController as createCampaignControllerRuntime } from './c
 
 const createCampaignController = () => createCampaignControllerRuntime(
   CHAPTERS,
-  { combatRandom: () => 0.5 },
+  { combatRandom: () => 0.5, equipmentRandom: () => 0.999_999 },
 );
 
 const advanceUntil = (
@@ -37,5 +37,6 @@ describe('campaign journey', () => {
     }
 
     expect(campaign.getSnapshot()).toMatchObject({ mode: 'campaign-complete', bossUnlocked: false });
+    expect(campaign.getSnapshot().equipment.inventory.length).toBeGreaterThan(0);
   });
 });
