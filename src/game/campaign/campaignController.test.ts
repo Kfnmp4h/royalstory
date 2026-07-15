@@ -36,6 +36,78 @@ describe('createCampaignController', () => {
     expect(campaign.getSnapshot()).toMatchObject({ mode: 'farming', combat: { activeRuntimeMs: 0, paused: true } });
   });
 
+  it('awards farming XP once per enemy death and none while paused', () => {
+    const chapters = CHAPTERS.map((chapter) => ({
+      ...chapter,
+      farming: {
+        ...chapter.farming,
+        balance: {
+          ...chapter.farming.balance,
+          player: { ...chapter.farming.balance.player, attackIntervalMs: 100 },
+          enemy: { ...chapter.farming.balance.enemy, maxHp: 1 },
+        },
+      },
+    }));
+    const campaign = createCampaignController(chapters);
+    expect(campaign.advance(100)).toContainEqual({ type: 'death', actor: 'enemy' });
+    expect(campaign.getSnapshot().progression).toMatchObject({ level: 1, xp: 10, totalXp: 10 });
+    campaign.pause();
+    campaign.advance(60_000);
+    expect(campaign.getSnapshot().progression.totalXp).toBe(10);
+  });
+
+  it('awards breakthrough and boss XP before starting the next encounter', () => {
+    const chapters = CHAPTERS.map((chapter) => ({
+      ...chapter,
+      breakthrough: {
+        ...chapter.breakthrough,
+        balance: {
+          ...chapter.breakthrough.balance,
+          player: { ...chapter.breakthrough.balance.player, attackIntervalMs: 100 },
+          enemy: { ...chapter.breakthrough.balance.enemy, maxHp: 1 },
+        },
+      },
+      boss: {
+        ...chapter.boss,
+        balance: {
+          ...chapter.boss.balance,
+          player: { ...chapter.boss.balance.player, attackIntervalMs: 100 },
+          enemy: { ...chapter.boss.balance.enemy, maxHp: 1 },
+        },
+      },
+    }));
+    const campaign = createCampaignController(chapters);
+    campaign.startBreakthrough();
+    campaign.advance(100);
+    expect(campaign.getSnapshot()).toMatchObject({
+      mode: 'farming', bossUnlocked: true, progression: { xp: 40, totalXp: 40 },
+      combat: { player: { attack: 18 } },
+    });
+    campaign.startBoss();
+    campaign.advance(100);
+    expect(campaign.getSnapshot()).toMatchObject({
+      chapter: { number: 2 },
+      progression: { level: 3, xp: 15, totalXp: 140, stats: { attack: 22, defense: 4, maxHp: 136 } },
+      combat: { player: { attack: 22, defense: 4, maxHp: 136 } },
+    });
+  });
+
+  it('gives no XP for player death', () => {
+    const chapters = CHAPTERS.map((chapter) => ({
+      ...chapter,
+      farming: {
+        ...chapter.farming,
+        balance: {
+          ...chapter.farming.balance,
+          enemy: { ...chapter.farming.balance.enemy, attack: 10_000, attackIntervalMs: 100 },
+        },
+      },
+    }));
+    const campaign = createCampaignController(chapters);
+    campaign.advance(100);
+    expect(campaign.getSnapshot().progression.totalXp).toBe(0);
+  });
+
   it('rejects malformed campaign definitions before a battle starts', () => {
     expect(() => createCampaignController([])).toThrow('Campaign must contain 36 ordered chapters');
     expect(() => createCampaignController(new Array<ChapterDefinition>(36))).toThrow(
@@ -127,7 +199,8 @@ describe('createCampaignController', () => {
   it('keeps farming after an enemy death and resumes the encounter normally', () => {
     const campaign = createCampaignController(withEncounterBalance('farming', {
       ...CHAPTERS[0].farming.balance,
-      player: { ...CHAPTERS[0].farming.balance.player, attack: 10_000, attackIntervalMs: 100 },
+      player: { ...CHAPTERS[0].farming.balance.player, attackIntervalMs: 100 },
+      enemy: { ...CHAPTERS[0].farming.balance.enemy, maxHp: 1 },
     }));
 
     expect(campaign.advance(100)).toContainEqual({ type: 'death', actor: 'enemy' });

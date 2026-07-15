@@ -299,7 +299,8 @@ describe('createBattleGame', () => {
           ...chapter.breakthrough,
           balance: {
             ...chapter.breakthrough.balance,
-            player: { ...chapter.breakthrough.balance.player, attack: 10_000, attackIntervalMs: 100 },
+            player: { ...chapter.breakthrough.balance.player, attackIntervalMs: 100 },
+            enemy: { ...chapter.breakthrough.balance.enemy, maxHp: 1 },
           },
         }
         : {

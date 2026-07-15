@@ -1,4 +1,6 @@
 import { createCombatEngine } from '../combatEngine';
+import { getEncounterXp } from '../balance';
+import { createProgressionController } from '../progression/progressionController';
 import type { CombatEngine, CombatEvent } from '../types';
 import { CHAPTERS, getChapter } from './campaignDefinitions';
 import type {
@@ -94,10 +96,20 @@ export const createCampaignController = (
   let bossUnlocked = false;
   let encounter: EncounterDefinition | null;
   let engine: CombatEngine | null;
+  const progression = createProgressionController();
 
   const startEncounter = (definition: EncounterDefinition, nextMode: CampaignMode) => {
+    const stats = progression.getSnapshot().stats;
     encounter = definition;
-    engine = createCombatEngine(definition.balance);
+    engine = createCombatEngine({
+      ...definition.balance,
+      player: {
+        ...definition.balance.player,
+        attack: stats.attack,
+        defense: stats.defense,
+        maxHp: stats.maxHp,
+      },
+    });
     mode = nextMode;
   };
 
@@ -110,6 +122,10 @@ export const createCampaignController = (
 
     const events = engine.advance(elapsedMs);
     const death = events.find((event) => event.type === 'death');
+    if (death?.actor === 'enemy' && encounter !== null) {
+      progression.awardXp(getEncounterXp(chapter.number, encounter.kind));
+      engine.applyPlayerStats(progression.getSnapshot().stats);
+    }
     if (death === undefined || mode === 'farming') return events;
 
     if (mode === 'breakthrough') {
@@ -145,6 +161,7 @@ export const createCampaignController = (
     chapter,
     unlockedChapter,
     encounter,
+    progression: progression.getSnapshot(),
     combat: engine?.getSnapshot() ?? null,
   });
 

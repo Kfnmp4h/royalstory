@@ -1,4 +1,5 @@
 import type { CombatEvent, CombatSnapshot, CombatBalance } from '../types';
+import type { ProgressionSnapshot } from '../progression/progressionTypes';
 
 export type CampaignMode = 'farming' | 'breakthrough' | 'boss' | 'campaign-complete';
 export type EncounterKind = 'farming' | 'breakthrough' | 'boss';
@@ -31,6 +32,7 @@ export interface CampaignSnapshot {
   chapter: ChapterDefinition;
   unlockedChapter: number;
   encounter: EncounterDefinition | null;
+  progression: ProgressionSnapshot;
   combat: CombatSnapshot | null;
 }
 

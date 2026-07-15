@@ -33,6 +33,13 @@ const runningStatus: BattleStatus = {
     chapter: getChapter(1),
     unlockedChapter: 1,
     encounter: getChapter(1).farming,
+    progression: {
+      level: 1,
+      xp: 0,
+      xpToNextLevel: 50,
+      totalXp: 0,
+      stats: { attack: 18, defense: 2, maxHp: 120 },
+    },
     combat: {
       phase: 'fighting',
       paused: false,
@@ -80,6 +87,13 @@ const campaignCompleteStatus: BattleStatus = {
     chapter: getChapter(36),
     unlockedChapter: 36,
     encounter: null,
+    progression: {
+      level: 1,
+      xp: 0,
+      xpToNextLevel: 50,
+      totalXp: 0,
+      stats: { attack: 18, defense: 2, maxHp: 120 },
+    },
     combat: null,
   },
 };
