@@ -41,6 +41,20 @@ export const createCombatEngine = (
   let paused = false;
   let recoveryRemainingMs = 0;
 
+  if (options.initialState) {
+    const initial = options.initialState;
+    Object.assign(player, initial.player);
+    Object.assign(enemy, initial.enemy);
+    playerAttackAccumulatorMs = 0;
+    enemyAttackAccumulatorMs = 0;
+    activeRuntimeMs = initial.activeRuntimeMs;
+    totalAttacks = initial.totalAttacks;
+    defeatedEnemies = initial.defeatedEnemies;
+    phase = initial.phase;
+    paused = initial.paused;
+    recoveryRemainingMs = initial.recoveryRemainingMs;
+  }
+
   const readRandom = (): number => {
     const value = random();
     if (!Number.isFinite(value) || value < 0 || value >= 1) {
@@ -224,5 +238,7 @@ export const createCombatEngine = (
     enemy: { ...enemy },
   });
 
-  return { advance, pause, resume, applyPlayerStats, getSnapshot };
+  const getPersistentState = (): CombatSnapshot => getSnapshot();
+
+  return { advance, pause, resume, applyPlayerStats, getSnapshot, getPersistentState };
 };

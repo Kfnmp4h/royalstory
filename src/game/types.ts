@@ -69,6 +69,7 @@ export type CombatEvent =
 export interface CombatEngineOptions {
   readonly random?: () => number;
   readonly monsterDamageKind?: MonsterDamageKind;
+  readonly initialState?: CombatSnapshot;
 }
 
 export interface CombatEngine {
@@ -77,4 +78,5 @@ export interface CombatEngine {
   resume(): CombatEvent[];
   applyPlayerStats(stats: PlayerCombatProfile): void;
   getSnapshot(): CombatSnapshot;
+  getPersistentState(): CombatSnapshot;
 }

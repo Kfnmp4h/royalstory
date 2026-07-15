@@ -56,6 +56,15 @@ const countActorEvents = (
 ): number => events.filter((event) => event.type === type && event.actor === actor).length;
 
 describe('createCombatEngine', () => {
+  it('restores an active combat snapshot without resetting counters or HP', () => {
+    const original = createCombatEngine();
+    original.advance(900);
+    const persisted = original.getPersistentState();
+
+    const restored = createCombatEngine(undefined, { initialState: persisted });
+    expect(restored.getSnapshot()).toEqual(original.getSnapshot());
+  });
+
   it('waits for Ari attack interval before damaging Mossling', () => {
     const engine = createCombatEngine();
     expect(engine.advance(899)).toEqual([]);
