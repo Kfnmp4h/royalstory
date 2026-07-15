@@ -3,6 +3,24 @@ import { MAX_TOTAL_XP } from '../balance';
 import { createProgressionController } from './progressionController';
 
 describe('createProgressionController', () => {
+  it('restores a validated progression state without changing XP rules', () => {
+    const progression = createProgressionController({ level: 2, xp: 20, totalXp: 70 });
+
+    expect(progression.getSnapshot()).toMatchObject({
+      level: 2,
+      xp: 20,
+      totalXp: 70,
+      xpToNextLevel: 75,
+    });
+    expect(progression.awardXp(55)).toMatchObject({ level: 3, xp: 0, totalXp: 125 });
+  });
+
+  it('restores the capped level with zero XP', () => {
+    const progression = createProgressionController({ level: 200, xp: 0, totalXp: 502_475 });
+
+    expect(progression.getSnapshot()).toMatchObject({ level: 200, xp: 0, totalXp: 502_475, xpToNextLevel: 0 });
+  });
+
   it('starts at level one with derived stats', () => {
     expect(createProgressionController().getSnapshot()).toEqual({
       level: 1,

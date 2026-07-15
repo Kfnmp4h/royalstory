@@ -8,7 +8,14 @@ export interface ProgressionSnapshot {
   stats: Readonly<PlayerStats>;
 }
 
+export interface ProgressionPersistentState {
+  readonly level: number;
+  readonly xp: number;
+  readonly totalXp: number;
+}
+
 export interface ProgressionController {
   awardXp(amount: number): ProgressionSnapshot;
   getSnapshot(): ProgressionSnapshot;
+  getPersistentState(): ProgressionPersistentState;
 }
