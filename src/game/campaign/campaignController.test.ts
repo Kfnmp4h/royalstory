@@ -71,7 +71,37 @@ describe('createCampaignController', () => {
       },
     };
 
-    for (const invalidCampaign of [wrongEncounterKind, missingVisual, malformedBalance]) {
+    const invalidAttack = CHAPTERS.map((chapter) => ({ ...chapter }));
+    invalidAttack[0] = {
+      ...invalidAttack[0],
+      farming: {
+        ...invalidAttack[0].farming,
+        balance: {
+          ...invalidAttack[0].farming.balance,
+          player: { ...invalidAttack[0].farming.balance.player, attack: 0 },
+        },
+      },
+    };
+
+    const invalidDefense = CHAPTERS.map((chapter) => ({ ...chapter }));
+    invalidDefense[0] = {
+      ...invalidDefense[0],
+      boss: {
+        ...invalidDefense[0].boss,
+        balance: {
+          ...invalidDefense[0].boss.balance,
+          enemy: { ...invalidDefense[0].boss.balance.enemy, defense: -1 },
+        },
+      },
+    };
+
+    for (const invalidCampaign of [
+      wrongEncounterKind,
+      missingVisual,
+      malformedBalance,
+      invalidAttack,
+      invalidDefense,
+    ]) {
       expect(() => createCampaignController(invalidCampaign)).toThrow(
         new Error('Campaign must contain 36 ordered chapters'),
       );
@@ -81,7 +111,7 @@ describe('createCampaignController', () => {
   it('returns a won breakthrough to farming with the boss unlocked and keeps farming active', () => {
     const campaign = createCampaignController(withEncounterBalance('breakthrough', {
       ...CHAPTERS[0].breakthrough.balance,
-      player: { ...CHAPTERS[0].breakthrough.balance.player, damage: 10_000, attackIntervalMs: 100 },
+      player: { ...CHAPTERS[0].breakthrough.balance.player, attack: 10_000, attackIntervalMs: 100 },
     }));
     campaign.startBreakthrough();
     advanceUntil(campaign, () => campaign.getSnapshot().bossUnlocked);
@@ -97,7 +127,7 @@ describe('createCampaignController', () => {
   it('keeps farming after an enemy death and resumes the encounter normally', () => {
     const campaign = createCampaignController(withEncounterBalance('farming', {
       ...CHAPTERS[0].farming.balance,
-      player: { ...CHAPTERS[0].farming.balance.player, damage: 10_000, attackIntervalMs: 100 },
+      player: { ...CHAPTERS[0].farming.balance.player, attack: 10_000, attackIntervalMs: 100 },
     }));
 
     expect(campaign.advance(100)).toContainEqual({ type: 'death', actor: 'enemy' });
@@ -110,7 +140,7 @@ describe('createCampaignController', () => {
   it('returns a lost breakthrough to farming in the same chapter', () => {
     const campaign = createCampaignController(withEncounterBalance('breakthrough', {
       ...CHAPTERS[0].breakthrough.balance,
-      enemy: { ...CHAPTERS[0].breakthrough.balance.enemy, damage: 120, attackIntervalMs: 100 },
+      enemy: { ...CHAPTERS[0].breakthrough.balance.enemy, attack: 120, attackIntervalMs: 100 },
     }));
     campaign.startBreakthrough();
     advanceUntil(campaign, () => campaign.getSnapshot().mode === 'farming');
@@ -146,14 +176,14 @@ describe('createCampaignController', () => {
         ...chapter.breakthrough,
         balance: {
           ...chapter.breakthrough.balance,
-          player: { ...chapter.breakthrough.balance.player, damage: 10_000, attackIntervalMs: 100 },
+          player: { ...chapter.breakthrough.balance.player, attack: 10_000, attackIntervalMs: 100 },
         },
       },
       boss: {
         ...chapter.boss,
         balance: {
           ...chapter.boss.balance,
-          enemy: { ...chapter.boss.balance.enemy, damage: 120, attackIntervalMs: 100 },
+          enemy: { ...chapter.boss.balance.enemy, attack: 120, attackIntervalMs: 100 },
         },
       },
     }));
@@ -189,21 +219,21 @@ describe('createCampaignController', () => {
         ...chapter.farming,
         balance: {
           ...chapter.farming.balance,
-          player: { ...chapter.farming.balance.player, damage: 10_000, attackIntervalMs: 100 },
+          player: { ...chapter.farming.balance.player, attack: 10_000, attackIntervalMs: 100 },
         },
       },
       breakthrough: {
         ...chapter.breakthrough,
         balance: {
           ...chapter.breakthrough.balance,
-          player: { ...chapter.breakthrough.balance.player, damage: 10_000, attackIntervalMs: 100 },
+          player: { ...chapter.breakthrough.balance.player, attack: 10_000, attackIntervalMs: 100 },
         },
       },
       boss: {
         ...chapter.boss,
         balance: {
           ...chapter.boss.balance,
-          player: { ...chapter.boss.balance.player, damage: 10_000, attackIntervalMs: 100 },
+          player: { ...chapter.boss.balance.player, attack: 10_000, attackIntervalMs: 100 },
         },
       },
     }));

@@ -23,6 +23,10 @@ const isPositiveNumber = (value: unknown): value is number => (
   typeof value === 'number' && Number.isFinite(value) && value > 0
 );
 
+const isNonNegativeNumber = (value: unknown): value is number => (
+  typeof value === 'number' && Number.isFinite(value) && value >= 0
+);
+
 const isColor = (value: unknown): value is number => (
   typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 0xffffff
 );
@@ -31,8 +35,9 @@ const hasCombatant = (value: unknown, id: 'player' | 'enemy'): boolean => (
   isRecord(value)
   && value.id === id
   && isNonEmptyString(value.name)
+  && isPositiveNumber(value.attack)
+  && isNonNegativeNumber(value.defense)
   && isPositiveNumber(value.maxHp)
-  && isPositiveNumber(value.damage)
   && isPositiveNumber(value.attackIntervalMs)
 );
 

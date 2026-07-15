@@ -201,21 +201,21 @@ describe('createBattleGame', () => {
         ...chapter.farming,
         balance: {
           ...chapter.farming.balance,
-          player: { ...chapter.farming.balance.player, damage: 10_000, attackIntervalMs: 100 },
+          player: { ...chapter.farming.balance.player, attack: 10_000, attackIntervalMs: 100 },
         },
       },
       breakthrough: {
         ...chapter.breakthrough,
         balance: {
           ...chapter.breakthrough.balance,
-          player: { ...chapter.breakthrough.balance.player, damage: 10_000, attackIntervalMs: 100 },
+          player: { ...chapter.breakthrough.balance.player, attack: 10_000, attackIntervalMs: 100 },
         },
       },
       boss: {
         ...chapter.boss,
         balance: {
           ...chapter.boss.balance,
-          player: { ...chapter.boss.balance.player, damage: 10_000, attackIntervalMs: 100 },
+          player: { ...chapter.boss.balance.player, attack: 10_000, attackIntervalMs: 100 },
         },
       },
     }));
@@ -299,14 +299,14 @@ describe('createBattleGame', () => {
           ...chapter.breakthrough,
           balance: {
             ...chapter.breakthrough.balance,
-            player: { ...chapter.breakthrough.balance.player, damage: 10_000, attackIntervalMs: 100 },
+            player: { ...chapter.breakthrough.balance.player, attack: 10_000, attackIntervalMs: 100 },
           },
         }
         : {
           ...chapter.breakthrough,
           balance: {
             ...chapter.breakthrough.balance,
-            enemy: { ...chapter.breakthrough.balance.enemy, damage: 120, attackIntervalMs: 100 },
+            enemy: { ...chapter.breakthrough.balance.enemy, attack: 122, attackIntervalMs: 100 },
           },
         },
       boss: lostEncounter === 'boss'
@@ -314,7 +314,7 @@ describe('createBattleGame', () => {
           ...chapter.boss,
           balance: {
             ...chapter.boss.balance,
-            enemy: { ...chapter.boss.balance.enemy, damage: 120, attackIntervalMs: 100 },
+            enemy: { ...chapter.boss.balance.enemy, attack: 122, attackIntervalMs: 100 },
           },
         }
         : chapter.boss,

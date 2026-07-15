@@ -41,7 +41,8 @@ export function createEncounterBalance(chapter: number, kind: EncounterKind): Co
     enemy: {
       ...COMBAT_BALANCE.enemy,
       maxHp: 72 + chapter * 3 * multiplier,
-      damage: 2 + Math.floor(chapter / 12),
+      attack: 2 + Math.floor(chapter / 12),
+      defense: 0,
       attackIntervalMs: 1_300,
     },
   };

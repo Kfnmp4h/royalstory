@@ -1,11 +1,15 @@
 export type ActorId = 'player' | 'enemy';
 export type CombatPhase = 'fighting' | 'enemy-defeated' | 'player-defeated';
 
-export interface CombatantConfig {
+export interface PlayerStats {
+  attack: number;
+  defense: number;
+  maxHp: number;
+}
+
+export interface CombatantConfig extends PlayerStats {
   id: ActorId;
   name: string;
-  maxHp: number;
-  damage: number;
   attackIntervalMs: number;
 }
 
@@ -16,12 +20,6 @@ export interface CombatBalance {
   playerRespawnMs: number;
   player: CombatantConfig;
   enemy: CombatantConfig;
-}
-
-export interface PlayerStats {
-  attack: number;
-  defense: number;
-  maxHp: number;
 }
 
 export interface CombatantSnapshot extends CombatantConfig {
@@ -52,5 +50,6 @@ export interface CombatEngine {
   advance(elapsedMs: number): CombatEvent[];
   pause(): CombatEvent[];
   resume(): CombatEvent[];
+  applyPlayerStats(stats: PlayerStats): void;
   getSnapshot(): CombatSnapshot;
 }

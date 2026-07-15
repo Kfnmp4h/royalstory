@@ -33,10 +33,10 @@ describe('createEncounterBalance', () => {
     const breakthrough = createEncounterBalance(12, 'breakthrough');
     const boss = createEncounterBalance(12, 'boss');
 
-    expect(farming.player).toMatchObject({ name: 'Ari', maxHp: 120, damage: 18, attackIntervalMs: 900 });
-    // Chapter 36's 396 HP boss takes 22 Ari attacks (19.8 s), before its 15 attacks deal 75 damage.
+    expect(farming.player).toMatchObject({ name: 'Ari', attack: 18, defense: 2, maxHp: 120, attackIntervalMs: 900 });
+    // Chapter 36's 396 HP boss takes 22 Ari attacks (19.8 s), before its 15 attacks deal 45 damage after DEF.
     expect([farming.enemy.maxHp, breakthrough.enemy.maxHp, boss.enemy.maxHp]).toEqual([108, 144, 180]);
-    expect(boss.enemy).toMatchObject({ id: 'enemy', damage: 3, attackIntervalMs: 1_300 });
+    expect(boss.enemy).toMatchObject({ id: 'enemy', attack: 3, defense: 0, attackIntervalMs: 1_300 });
     expect(boss).not.toBe(farming);
     expect(boss.enemy).not.toBe(farming.enemy);
   });

@@ -5,6 +5,7 @@ import type {
   CombatEngine,
   CombatEvent,
   CombatSnapshot,
+  PlayerStats,
 } from './types';
 
 export const createCombatEngine = (
@@ -54,8 +55,9 @@ export const createCombatEngine = (
     if (!attacker.alive || !target.alive) return;
     totalAttacks += 1;
     events.push({ type: 'attack', attacker: attacker.id, target: target.id });
-    target.hp = Math.max(0, target.hp - attacker.damage);
-    events.push({ type: 'damage', target: target.id, amount: attacker.damage, hp: target.hp });
+    const damage = Math.max(1, attacker.attack - target.defense);
+    target.hp = Math.max(0, target.hp - damage);
+    events.push({ type: 'damage', target: target.id, amount: damage, hp: target.hp });
     if (target.hp === 0) {
       target.alive = false;
       beginRecovery(target.id, events);
@@ -111,6 +113,19 @@ export const createCombatEngine = (
     return [{ type: 'resume' }];
   };
 
+  const applyPlayerStats = (stats: PlayerStats): void => {
+    if (
+      !Number.isFinite(stats.attack) || stats.attack <= 0
+      || !Number.isFinite(stats.defense) || stats.defense < 0
+      || !Number.isFinite(stats.maxHp) || stats.maxHp < player.maxHp
+    ) throw new RangeError('Player stats must contain positive attack/maxHp and non-negative defense');
+    const maxHpDelta = stats.maxHp - player.maxHp;
+    player.attack = stats.attack;
+    player.defense = stats.defense;
+    player.maxHp = stats.maxHp;
+    if (player.alive) player.hp = Math.min(player.maxHp, player.hp + maxHpDelta);
+  };
+
   const getSnapshot = (): CombatSnapshot => ({
     phase,
     paused,
@@ -122,5 +137,5 @@ export const createCombatEngine = (
     enemy: { ...enemy },
   });
 
-  return { advance, pause, resume, getSnapshot };
+  return { advance, pause, resume, applyPlayerStats, getSnapshot };
 };

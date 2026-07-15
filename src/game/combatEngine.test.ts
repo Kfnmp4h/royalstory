@@ -37,8 +37,39 @@ describe('createCombatEngine', () => {
   it('lets Mossling attack on its independent interval', () => {
     const engine = createCombatEngine();
     engine.advance(1_300);
-    expect(engine.getSnapshot().player.hp).toBe(111);
+    expect(engine.getSnapshot().player.hp).toBe(113);
     expect(engine.getSnapshot().enemy.hp).toBe(72);
+  });
+
+  it('subtracts defense and always deals at least one damage', () => {
+    const engine = createCombatEngine(makeBalance({
+      player: { attack: 3 },
+      enemy: { defense: 20 },
+    }));
+    expect(engine.advance(900)).toContainEqual({ type: 'damage', target: 'enemy', amount: 1, hp: 89 });
+  });
+
+  it('applies stronger player stats without resetting active combat state', () => {
+    const engine = createCombatEngine();
+    engine.advance(450);
+    const before = engine.getSnapshot();
+    engine.applyPlayerStats({ attack: 90, defense: 5, maxHp: 128 });
+    const upgraded = engine.getSnapshot();
+    expect(upgraded).toMatchObject({
+      activeRuntimeMs: before.activeRuntimeMs,
+      totalAttacks: before.totalAttacks,
+      player: { attack: 90, defense: 5, maxHp: 128, hp: 128 },
+      enemy: { hp: before.enemy.hp },
+    });
+    expect(engine.advance(450)).toContainEqual({ type: 'damage', target: 'enemy', amount: 90, hp: 0 });
+  });
+
+  it('rejects invalid live stats before changing combat', () => {
+    const engine = createCombatEngine();
+    const before = engine.getSnapshot();
+    expect(() => engine.applyPlayerStats({ attack: 0, defense: 2, maxHp: 120 }))
+      .toThrow('Player stats must contain positive attack/maxHp and non-negative defense');
+    expect(engine.getSnapshot()).toEqual(before);
   });
 
   it.each([Number.NaN, Number.POSITIVE_INFINITY, 0, -1])(
@@ -51,7 +82,7 @@ describe('createCombatEngine', () => {
   );
 
   it('emits one enemy death and replaces Mossling after 1,200 ms', () => {
-    const engine = createCombatEngine(makeBalance({ player: { damage: 90 } }));
+    const engine = createCombatEngine(makeBalance({ player: { attack: 90 } }));
     const events = engine.advance(900);
     expect(countActorEvents(events, 'death', 'enemy')).toBe(1);
     expect(engine.getSnapshot()).toMatchObject({ phase: 'enemy-defeated', defeatedEnemies: 1 });
@@ -64,7 +95,7 @@ describe('createCombatEngine', () => {
   });
 
   it('resurrects Ari after 3 seconds and resets Mossling health', () => {
-    const engine = createCombatEngine(makeBalance({ enemy: { damage: 120, attackIntervalMs: 100 } }));
+    const engine = createCombatEngine(makeBalance({ enemy: { attack: 122, attackIntervalMs: 100 } }));
     const events = engine.advance(100);
     expect(countActorEvents(events, 'death', 'player')).toBe(1);
     events.push(...engine.advance(2_999));
@@ -93,8 +124,8 @@ describe('createCombatEngine', () => {
 
   it('resolves Ari first when both attacks are due and cancels a dead Mossling attack', () => {
     const engine = createCombatEngine(makeBalance({
-      player: { damage: 90, attackIntervalMs: 100 },
-      enemy: { damage: 120, attackIntervalMs: 100 },
+      player: { attack: 90, attackIntervalMs: 100 },
+      enemy: { attack: 122, attackIntervalMs: 100 },
     }));
     const events = engine.advance(100);
     expect(events).toContainEqual({ type: 'death', actor: 'enemy' });
@@ -103,7 +134,7 @@ describe('createCombatEngine', () => {
   });
 
   it('does not carry unused recovery time into a new fighting phase', () => {
-    const engine = createCombatEngine(makeBalance({ player: { damage: 90 } }));
+    const engine = createCombatEngine(makeBalance({ player: { attack: 90 } }));
     engine.advance(900);
     expect(engine.advance(1_201)).toContainEqual({ type: 'respawn', actor: 'enemy' });
 
