@@ -1,6 +1,7 @@
 import type { CombatEvent, CombatSnapshot, CombatBalance } from '../types';
 import type { EquipmentSnapshot, RandomSource } from '../equipment/equipmentTypes';
 import type { ProgressionSnapshot } from '../progression/progressionTypes';
+import type { CampaignPersistentState } from '../save/saveTypes';
 
 export type CampaignMode = 'farming' | 'breakthrough' | 'boss' | 'campaign-complete';
 export type EncounterKind = 'farming' | 'breakthrough' | 'boss';
@@ -41,6 +42,7 @@ export interface CampaignSnapshot {
 export interface CampaignControllerOptions {
   readonly combatRandom?: RandomSource;
   readonly equipmentRandom?: RandomSource;
+  readonly initialState?: CampaignPersistentState;
 }
 
 export interface CampaignController {
@@ -52,4 +54,5 @@ export interface CampaignController {
   equip(itemId: string): void;
   equipBest(): void;
   getSnapshot(): CampaignSnapshot;
+  getPersistentState?(): CampaignPersistentState;
 }

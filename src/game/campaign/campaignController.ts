@@ -93,14 +93,18 @@ export const createCampaignController = (
     throw new Error('Campaign must contain 36 ordered chapters');
   }
 
-  let chapter = chapters === CHAPTERS ? getChapter(1) : chapters[0];
-  let unlockedChapter = 1;
-  let mode: CampaignMode = 'farming';
-  let bossUnlocked = false;
+  const initial = options.initialState;
+  let chapter = initial ? chapters[initial.chapterNumber - 1]! : chapters === CHAPTERS ? getChapter(1) : chapters[0]!;
+  let unlockedChapter = initial?.unlockedChapter ?? 1;
+  let mode: CampaignMode = initial?.mode ?? 'farming';
+  let bossUnlocked = initial?.bossUnlocked ?? false;
   let encounter: EncounterDefinition | null;
   let engine: CombatEngine | null;
-  const progression = createProgressionController();
-  const equipment = createEquipmentController(options.equipmentRandom ?? Math.random);
+  const progression = createProgressionController(initial?.progression);
+  const equipment = createEquipmentController({
+    random: options.equipmentRandom ?? Math.random,
+    initialState: initial?.equipment,
+  });
 
   const startEncounter = (definition: EncounterDefinition, nextMode: CampaignMode) => {
     const stats = progression.getSnapshot().stats;
@@ -124,7 +128,16 @@ export const createCampaignController = (
 
   const returnToFarming = () => startEncounter(chapter.farming, 'farming');
 
-  startEncounter(chapter.farming, 'farming');
+  if (mode === 'campaign-complete') {
+    encounter = null;
+    engine = null;
+  } else if (mode === 'breakthrough') {
+    startEncounter(chapter.breakthrough, 'breakthrough');
+  } else if (mode === 'boss') {
+    startEncounter(chapter.boss, 'boss');
+  } else {
+    startEncounter(chapter.farming, 'farming');
+  }
 
   const advance = (elapsedMs: number): CombatEvent[] => {
     if (!activeModes.has(mode) || engine === null) return [];
@@ -186,6 +199,16 @@ export const createCampaignController = (
     };
   };
 
+  const getPersistentState = () => Object.freeze({
+    chapterNumber: chapter.number,
+    unlockedChapter,
+    mode,
+    bossUnlocked,
+    progression: progression.getPersistentState(),
+    equipment: equipment.getPersistentState(),
+    combat: null,
+  });
+
   return {
     advance,
     pause: () => engine?.pause() ?? [],
@@ -205,5 +228,6 @@ export const createCampaignController = (
       applyEquipmentProfile();
     },
     getSnapshot,
+    getPersistentState,
   };
 };

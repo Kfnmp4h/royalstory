@@ -1,14 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { CHAPTERS } from './campaignDefinitions';
 import { createCampaignController as createCampaignControllerRuntime } from './campaignController';
-import type { ChapterDefinition } from './campaignTypes';
+import type { CampaignControllerOptions, ChapterDefinition } from './campaignTypes';
 
 const createCampaignController = (
   chapters: readonly ChapterDefinition[] = CHAPTERS,
-  options: {
-    readonly combatRandom?: () => number;
-    readonly equipmentRandom?: () => number;
-  } = {},
+  options: CampaignControllerOptions = {},
 ) => createCampaignControllerRuntime(chapters, {
   combatRandom: () => 0.5,
   equipmentRandom: () => 0.999_999,
@@ -40,6 +37,22 @@ const withEncounterBalance = (
 }));
 
 describe('createCampaignController', () => {
+  it('restores a persisted farming campaign without losing progression or equipment', () => {
+    const original = createCampaignController(CHAPTERS, {
+      equipmentRandom: scriptedRandom(0, 0, 0, 0),
+    });
+    original.advance(900);
+    const persisted = original.getPersistentState!();
+
+    const restored = createCampaignController(CHAPTERS, { initialState: persisted });
+    expect(restored.getSnapshot()).toMatchObject({
+      chapter: { number: persisted.chapterNumber },
+      mode: persisted.mode,
+      progression: persisted.progression,
+      equipment: { inventory: persisted.equipment.inventory },
+    });
+  });
+
   it('starts with an immutable empty equipment snapshot', () => {
     const equipment = createCampaignController().getSnapshot().equipment;
     expect(equipment.inventory).toEqual([]);
