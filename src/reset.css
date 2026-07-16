@@ -1,0 +1,130 @@
+.account-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgb(255 214 107 / 28%);
+  color: #fffaf0;
+  background: rgb(13 19 38 / 96%);
+  backdrop-filter: blur(12px);
+}
+
+.account-actions,
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.account-bar button,
+.dialog-actions button {
+  min-height: 44px;
+  padding: 9px 14px;
+  border: 1px solid #b8c4dd;
+  border-radius: 9px;
+  color: #fffaf0;
+  background: #1d2a4d;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.account-bar button:disabled,
+.dialog-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(4 8 18 / 82%);
+}
+
+.reset-dialog {
+  display: grid;
+  width: min(100%, 34rem);
+  max-height: min(90vh, 44rem);
+  gap: 16px;
+  overflow-y: auto;
+  padding: clamp(20px, 5vw, 32px);
+  border: 2px solid #ff8e98;
+  border-radius: 18px;
+  color: #fffaf0;
+  background: #151d36;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 58%);
+}
+
+.reset-dialog h2,
+.reset-dialog p {
+  margin: 0;
+}
+
+.reset-dialog label {
+  display: grid;
+  gap: 7px;
+  font-weight: 750;
+}
+
+.reset-dialog input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #c6d0e5;
+  border-radius: 9px;
+  color: #10172b;
+  background: #fff;
+  font: inherit;
+}
+
+.dialog-actions {
+  justify-content: flex-end;
+}
+
+.dialog-actions .destructive-action {
+  border-color: #ffd5d8;
+  color: #fff;
+  background: #9c2635;
+}
+
+.dialog-actions .destructive-action:hover:not(:disabled) {
+  background: #bc3042;
+}
+
+@media (max-width: 520px) {
+  .account-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .account-actions,
+  .dialog-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .account-actions button,
+  .dialog-actions button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reset-dialog {
+    animation: reset-dialog-in 140ms ease-out;
+  }
+
+  @keyframes reset-dialog-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+}
