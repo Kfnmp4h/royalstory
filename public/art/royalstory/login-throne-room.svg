@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+<title id="title">RoyalStory throne room</title><desc id="desc">A stylized royal throne room with marble columns, velvet banners, moonlit windows and a crimson carpet.</desc>
+<defs>
+<linearGradient id="bg" x2="0" y2="1"><stop stop-color="#392048"/><stop offset=".55" stop-color="#24122f"/><stop offset="1" stop-color="#100816"/></linearGradient>
+<linearGradient id="stone" x2="1"><stop stop-color="#c9b78f"/><stop offset=".5" stop-color="#fff9e9"/><stop offset="1" stop-color="#9a8667"/></linearGradient>
+<linearGradient id="gold" x2="0" y2="1"><stop stop-color="#f1d477"/><stop offset=".5" stop-color="#d6a943"/><stop offset="1" stop-color="#a97825"/></linearGradient>
+<linearGradient id="velvet" x2="0" y2="1"><stop stop-color="#a83b55"/><stop offset="1" stop-color="#6f203a"/></linearGradient>
+<radialGradient id="moon"><stop stop-color="#dfeaff" stop-opacity=".85"/><stop offset="1" stop-color="#7c9fd1" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="1920" height="1080" fill="url(#bg)"/>
+<ellipse cx="960" cy="260" rx="590" ry="360" fill="url(#moon)" opacity=".32"/>
+<g opacity=".92">
+<path d="M600 0h720v570H600z" fill="#1b0d25"/><path d="M700 0h520v520H700z" fill="#2e183d"/>
+<path d="M760 70h150v360H760zM1010 70h150v360h-150z" fill="#7c9fd1" opacity=".22" stroke="url(#gold)" stroke-width="12"/>
+<path d="M835 70v360M1085 70v360" stroke="#fff9e9" stroke-width="6" opacity=".35"/>
+</g>
+<g fill="url(#stone)" stroke="#a97825" stroke-width="10">
+<path d="M110 0h220v930H110zM1590 0h220v930h-220z"/><path d="M380 0h150v760H380zM1390 0h150v760h-150z"/>
+</g>
+<g fill="url(#gold)"><rect x="80" y="880" width="280" height="70" rx="20"/><rect x="1560" y="880" width="280" height="70" rx="20"/><rect x="350" y="710" width="210" height="55" rx="16"/><rect x="1360" y="710" width="210" height="55" rx="16"/></g>
+<g fill="url(#velvet)" stroke="url(#gold)" stroke-width="10"><path d="M405 40h100v420l-50 70-50-70z"/><path d="M1415 40h100v420l-50 70-50-70z"/></g>
+<g transform="translate(770 360)"><path d="M70 330V90Q70 0 190 0t120 90v240z" fill="#6f203a" stroke="url(#gold)" stroke-width="18"/><path d="M20 330h340v100H20z" fill="url(#gold)"/><path d="M120 80h140v250H120z" fill="#4b245f"/><path d="M190 55l18 30 35 8-25 25 7 36-35-17-35 17 7-36-25-25 35-8z" fill="#f1d477"/></g>
+<path d="M700 1080 850 560h220l150 520z" fill="url(#velvet)" stroke="url(#gold)" stroke-width="14"/>
+<path d="M0 920h1920v160H0z" fill="#120918" opacity=".65"/>
+</svg>
