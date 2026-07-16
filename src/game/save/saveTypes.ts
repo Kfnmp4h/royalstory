@@ -30,3 +30,36 @@ export interface PlayerSaveState {
   readonly gold: number;
   readonly campaign: CampaignPersistentState;
 }
+
+export type PlayerCommand =
+  | { readonly type: 'sync'; readonly expectedVersion: number }
+  | { readonly type: 'startBreakthrough'; readonly expectedVersion: number }
+  | { readonly type: 'startBoss'; readonly expectedVersion: number }
+  | { readonly type: 'equip'; readonly expectedVersion: number; readonly itemId: string }
+  | { readonly type: 'equipBest'; readonly expectedVersion: number };
+
+export interface PlayerApiRecord {
+  readonly saveVersion: number;
+  readonly state: PlayerSaveState;
+  readonly lastActivityAt: string;
+  readonly updatedAt: string;
+}
+
+export interface OfflineRewardSummary {
+  readonly elapsedMs: number;
+  readonly kills: number;
+  readonly gold: number;
+  readonly xp: number;
+  readonly drops: readonly EquipmentItem[];
+}
+
+export type PlayerApiResponse =
+  | {
+    readonly kind: 'loaded' | 'saved';
+    readonly record: PlayerApiRecord;
+    readonly offline?: OfflineRewardSummary;
+  }
+  | { readonly kind: 'stale'; readonly record: PlayerApiRecord }
+  | { readonly kind: 'unauthorized' }
+  | { readonly kind: 'invalid'; readonly message: string }
+  | { readonly kind: 'unavailable'; readonly message: string };
