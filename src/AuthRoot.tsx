@@ -15,13 +15,30 @@ export function AuthRoot() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [gameNotice, setGameNotice] = useState<string | null>(null);
 
   const loadSession = useCallback(async () => {
     setChecking(true);
-    const response = await playerApi.load();
-    setRecord(response.kind === 'loaded' || response.kind === 'saved' || response.kind === 'stale'
-      ? response.record
-      : null);
+    const loaded = await playerApi.load();
+    if (loaded.kind !== 'loaded' && loaded.kind !== 'saved' && loaded.kind !== 'stale') {
+      setRecord(null);
+      setChecking(false);
+      return;
+    }
+
+    const synced = await playerApi.command({
+      type: 'sync',
+      expectedVersion: loaded.record.saveVersion,
+    });
+    const response = synced.kind === 'loaded' || synced.kind === 'saved' || synced.kind === 'stale'
+      ? synced
+      : loaded;
+    setRecord(response.record);
+    if ('offline' in response && response.offline && response.offline.kills > 0) {
+      setGameNotice(
+        `Offline rewards: ${response.offline.gold} gold, ${response.offline.xp} XP, ${response.offline.drops.length} drops.`,
+      );
+    }
     setChecking(false);
   }, []);
 
@@ -54,6 +71,7 @@ export function AuthRoot() {
     setBusy(true);
     await authApi.signOut();
     setRecord(null);
+    setGameNotice(null);
     setBusy(false);
   };
 
@@ -86,7 +104,7 @@ export function AuthRoot() {
   return (
     <>
       <div className="account-bar"><span>Online save active</span><button type="button" disabled={busy} onClick={signOut}>Sign out</button></div>
-      <App />
+      <App record={record} onRecordChange={setRecord} initialNotice={gameNotice} />
     </>
   );
 }
