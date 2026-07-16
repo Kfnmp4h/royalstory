@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
-import type { CampaignSnapshot } from '../campaign/campaignTypes';
+import { createCampaignController } from '../campaign/campaignController';
+import type { CampaignSnapshot, PersistentCampaignController } from '../campaign/campaignTypes';
+import type { CampaignPersistentState } from '../save/saveTypes';
 import { BattleScene } from './BattleScene';
 
 export interface BattleController {
@@ -18,16 +20,24 @@ export interface BattleStatus {
 
 interface CreateBattleGameOptions {
   parent: HTMLElement;
+  initialState?: CampaignPersistentState;
   onStatus: (status: BattleStatus) => void;
   onError: (error: Error) => void;
 }
 
 export function createBattleGame({
   parent,
+  initialState,
   onStatus,
   onError,
 }: CreateBattleGameOptions): BattleController {
   const battleScene = new BattleScene(onStatus, onError);
+  if (initialState) {
+    Object.assign(
+      battleScene as unknown as { campaign: PersistentCampaignController },
+      { campaign: createCampaignController(undefined, { initialState }) },
+    );
+  }
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent,
