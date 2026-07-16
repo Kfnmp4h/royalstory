@@ -7,7 +7,11 @@ export type AuthApiResult =
   | { readonly ok: true }
   | { readonly ok: false; readonly code: string; readonly message?: string };
 
-const postJson = async (path: string, body?: Record<string, unknown>): Promise<AuthApiResult> => {
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+);
+
+const postJson = async (path: string, body?: object): Promise<AuthApiResult> => {
   try {
     const response = await fetch(path, {
       method: 'POST',
@@ -15,12 +19,20 @@ const postJson = async (path: string, body?: Record<string, unknown>): Promise<A
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body ?? {}),
     });
-    const payload = await response.json() as Partial<AuthApiResult>;
-    if (payload.ok === true) return { ok: true };
+    const payload: unknown = await response.json();
+    if (isRecord(payload) && payload.ok === true) return { ok: true };
+
+    const code = isRecord(payload) && typeof payload.code === 'string'
+      ? payload.code
+      : 'unavailable';
+    const message = isRecord(payload) && typeof payload.message === 'string'
+      ? payload.message
+      : undefined;
+
     return {
       ok: false,
-      code: typeof payload.code === 'string' ? payload.code : 'unavailable',
-      ...(typeof payload.message === 'string' ? { message: payload.message } : {}),
+      code,
+      ...(message ? { message } : {}),
     };
   } catch {
     return { ok: false, code: 'unavailable' };
