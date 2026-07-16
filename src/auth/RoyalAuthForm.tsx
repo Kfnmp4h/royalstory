@@ -18,12 +18,11 @@ export function RoyalAuthForm({
   onModeChange,
   onRequestAnotherReset,
 }: RoyalAuthFormProps) {
-  const heading = recovery ? 'Choose a new password' : mode === 'sign-in' ? 'Sign in' : mode === 'sign-up' ? 'Create account' : 'Reset password';
+  const heading = recovery ? 'Choose a new password' : mode === 'sign-in' ? 'Enter the Kingdom' : mode === 'sign-up' ? 'Create account' : 'Reset password';
   const submitLabel = recovery ? busy ? 'Updating…' : 'Update password' : busy ? 'Please wait…' : mode === 'sign-in' ? 'Sign in' : mode === 'sign-up' ? 'Create account' : 'Send reset link';
 
   return (
     <RoyalPanel className="royal-auth-card" variant="modal">
-      <p className="royal-auth-kicker">Enter the kingdom</p>
       <h1 className="royal-auth-heading">{heading}</h1>
       <RoyalDivider />
 
