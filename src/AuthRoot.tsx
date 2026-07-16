@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { App } from './App';
+import { OfflineReturnDialog } from './components/OfflineReturnDialog';
 import { ResetProgressDialog } from './components/ResetProgressDialog';
 import { authApi } from './game/api/authApi';
 import { playerApi } from './game/api/playerApi';
-import type { PlayerApiRecord } from './game/save/saveTypes';
+import type { OfflineRewardSummary, PlayerApiRecord } from './game/save/saveTypes';
 
 type AuthMode = 'sign-in' | 'sign-up' | 'forgot';
 
@@ -22,6 +23,7 @@ export function AuthRoot() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [gameNotice, setGameNotice] = useState<string | null>(null);
+  const [offlineSummary, setOfflineSummary] = useState<OfflineRewardSummary | null>(null);
   const [resetOpen, setResetOpen] = useState(false);
 
   const loadSession = useCallback(async () => {
@@ -42,9 +44,7 @@ export function AuthRoot() {
       : loaded;
     setRecord(response.record);
     if ('offline' in response && response.offline && response.offline.kills > 0) {
-      setGameNotice(
-        `Offline rewards: ${response.offline.gold} gold, ${response.offline.xp} XP, ${response.offline.drops.length} drops.`,
-      );
+      setOfflineSummary(response.offline);
     }
     setChecking(false);
   }, []);
@@ -100,6 +100,7 @@ export function AuthRoot() {
     await authApi.signOut();
     setRecord(null);
     setGameNotice(null);
+    setOfflineSummary(null);
     setResetOpen(false);
     setBusy(false);
   };
@@ -202,6 +203,9 @@ export function AuthRoot() {
         </div>
       </div>
       <App record={record} onRecordChange={setRecord} initialNotice={gameNotice} />
+      {offlineSummary ? (
+        <OfflineReturnDialog summary={offlineSummary} onClose={() => setOfflineSummary(null)} />
+      ) : null}
       {resetOpen ? (
         <ResetProgressDialog
           busy={busy}
