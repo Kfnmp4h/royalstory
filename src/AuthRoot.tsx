@@ -13,8 +13,9 @@ const hasRecord = (value: Awaited<ReturnType<typeof playerApi.reset>>): value is
 );
 
 export function AuthRoot() {
+  const [recoveringPassword, setRecoveringPassword] = useState(() => window.location.pathname === '/reset-password');
   const [record, setRecord] = useState<PlayerApiRecord | null>(null);
-  const [checking, setChecking] = useState(true);
+  const [checking, setChecking] = useState(() => window.location.pathname !== '/reset-password');
   const [mode, setMode] = useState<AuthMode>('sign-in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -48,7 +49,28 @@ export function AuthRoot() {
     setChecking(false);
   }, []);
 
-  useEffect(() => { void loadSession(); }, [loadSession]);
+  useEffect(() => {
+    if (!recoveringPassword) void loadSession();
+  }, [loadSession, recoveringPassword]);
+
+  const submitRecovery = async (event: FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    setMessage(null);
+    const result = await authApi.updatePassword(password);
+    if (result.ok) {
+      await authApi.signOut();
+      window.history.replaceState({}, '', '/');
+      setPassword('');
+      setRecoveringPassword(false);
+      setMessage('Password updated. Sign in with your new password.');
+    } else if (result.code === 'unauthorized') {
+      setMessage('This reset link is no longer valid. Request a new one.');
+    } else {
+      setMessage('The password could not be updated. Request a new reset link and try again.');
+    }
+    setBusy(false);
+  };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -101,6 +123,48 @@ export function AuthRoot() {
     }
     setBusy(false);
   };
+
+  if (recoveringPassword) {
+    const recoveryStatus = new URLSearchParams(window.location.search).get('auth');
+    const invalidRecovery = recoveryStatus === 'invalid-link' || recoveryStatus === 'recovery-failed';
+    return (
+      <main className="auth-shell">
+        <section className="auth-panel" aria-label="Choose a new RoyalStory password">
+          <p className="eyebrow">Milestone 6 · Account recovery</p>
+          <h1>RoyalStory</h1>
+          <h2>Choose a new password</h2>
+          {invalidRecovery ? (
+            <>
+              <p role="alert">This reset link is invalid or expired.</p>
+              <button type="button" onClick={() => {
+                window.history.replaceState({}, '', '/');
+                setRecoveringPassword(false);
+                setMode('forgot');
+              }}>Request another reset link</button>
+            </>
+          ) : (
+            <form onSubmit={submitRecovery}>
+              <label>
+                New password
+                <input
+                  type="password"
+                  minLength={8}
+                  maxLength={128}
+                  required
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+              </label>
+              <button className="primary-action" type="submit" disabled={busy}>
+                {busy ? 'Updating…' : 'Update password'}
+              </button>
+            </form>
+          )}
+          {message ? <p role="status">{message}</p> : null}
+        </section>
+      </main>
+    );
+  }
 
   if (checking) return <main className="auth-shell"><p>Checking account session…</p></main>;
 
