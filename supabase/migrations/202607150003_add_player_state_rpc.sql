@@ -1,4 +1,5 @@
 create or replace function public.save_player_state(
+  player_user_id uuid,
   expected_version bigint,
   next_state jsonb,
   activity_at timestamptz
@@ -16,11 +17,9 @@ language plpgsql
 security definer
 set search_path = public, pg_temp
 as $$
-declare
-  current_user_id uuid := auth.uid();
 begin
-  if current_user_id is null then
-    raise exception 'Authentication required' using errcode = '28000';
+  if player_user_id is null then
+    raise exception 'Player user ID is required' using errcode = '22023';
   end if;
 
   if jsonb_typeof(next_state) <> 'object' then
@@ -35,7 +34,7 @@ begin
     state = next_state,
     last_activity_at = activity_at,
     updated_at = now()
-  where player_state.user_id = current_user_id
+  where player_state.user_id = player_user_id
     and player_state.save_version = expected_version
   returning
     player_state.user_id,
@@ -48,6 +47,7 @@ begin
 end;
 $$;
 
-revoke all on function public.save_player_state(bigint, jsonb, timestamptz) from public;
-revoke all on function public.save_player_state(bigint, jsonb, timestamptz) from anon;
-grant execute on function public.save_player_state(bigint, jsonb, timestamptz) to service_role;
+revoke all on function public.save_player_state(uuid, bigint, jsonb, timestamptz) from public;
+revoke all on function public.save_player_state(uuid, bigint, jsonb, timestamptz) from anon;
+revoke all on function public.save_player_state(uuid, bigint, jsonb, timestamptz) from authenticated;
+grant execute on function public.save_player_state(uuid, bigint, jsonb, timestamptz) to service_role;
