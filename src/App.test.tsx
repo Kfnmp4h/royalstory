@@ -5,6 +5,8 @@ import type { BattleStatus } from './game/phaser/battleGame';
 import { getChapter } from './game/campaign/campaignDefinitions';
 import { createEquipmentController } from './game/equipment/equipmentController';
 import type { EquipmentItem } from './game/equipment/equipmentTypes';
+import { createInitialPlayerSaveState } from './game/save/saveCodec';
+import type { PlayerApiRecord } from './game/save/saveTypes';
 import appSource from './App?raw';
 
 const battleGame = vi.hoisted(() => ({
@@ -17,8 +19,16 @@ const battleGame = vi.hoisted(() => ({
   equipBest: vi.fn(),
 }));
 
+const playerApi = vi.hoisted(() => ({
+  command: vi.fn(),
+}));
+
 vi.mock('./game/phaser/battleGame', () => ({
   createBattleGame: battleGame.createBattleGame,
+}));
+
+vi.mock('./game/api/playerApi', () => ({
+  playerApi,
 }));
 
 import { App } from './App';
@@ -34,6 +44,15 @@ const emptyEquipment = createEquipmentController(() => 0).getSnapshot({
   defense: 2,
   maxHp: 120,
 });
+
+const playerRecord: PlayerApiRecord = {
+  saveVersion: 1,
+  state: createInitialPlayerSaveState(),
+  lastActivityAt: '2026-07-16T00:00:00.000Z',
+  updatedAt: '2026-07-16T00:00:00.000Z',
+};
+
+const onRecordChange = vi.fn();
 
 const equippedGloves: EquipmentItem = {
   id: 'item-1',
@@ -189,6 +208,7 @@ describe('App', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    playerApi.command.mockImplementation(() => new Promise(() => {}));
     Object.defineProperty(document, 'hidden', { value: false, configurable: true });
     battleGame.createBattleGame.mockImplementation((options: GameCallbacks) => {
       callbacks = options;
@@ -209,13 +229,13 @@ describe('App', () => {
   });
 
   it('introduces the RoyalStory combat sandbox', () => {
-    render(<App />);
+    render(<App record={playerRecord} onRecordChange={onRecordChange} />);
     expect(screen.getByRole('heading', { name: 'RoyalStory' })).toBeInTheDocument();
-    expect(screen.getByText('Milestone 5 · Equipment Frontier')).toBeInTheDocument();
+    expect(screen.getByText('Milestone 6 · Online Kingdom')).toBeInTheDocument();
   });
 
   it('shows level, XP, and all three base stats', () => {
-    render(<App />);
+    render(<App record={playerRecord} onRecordChange={onRecordChange} />);
 
     expect(screen.getByRole('region', { name: 'Hero progression' })).toBeInTheDocument();
     expect(screen.getByText('Level 1 / 200')).toBeInTheDocument();
@@ -228,7 +248,7 @@ describe('App', () => {
 
   it('shows the newest level-up message briefly without recreating the game', () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App record={playerRecord} onRecordChange={onRecordChange} />);
 
     act(() => callbacks.onStatus({
       ...runningStatus,
@@ -251,7 +271,7 @@ describe('App', () => {
   });
 
   it('shows a full MAX progress state at level 200', () => {
-    render(<App />);
+    render(<App record={playerRecord} onRecordChange={onRecordChange} />);
 
     act(() => callbacks.onStatus({
       ...campaignCompleteStatus,
@@ -285,14 +305,14 @@ describe('App', () => {
       };
     });
 
-    render(<App />);
+    render(<App record={playerRecord} onRecordChange={onRecordChange} />);
 
     expect(battleGame.setPaused).toHaveBeenLastCalledWith(true);
     expect(screen.getByText('Paused')).toBeInTheDocument();
   });
 
   it('mounts exactly one battle game in its labelled host and destroys it on unmount', () => {
-    const { container, unmount } = render(<App />);
+    const { container, unmount } = render(<App record={playerRecord} onRecordChange={onRecordChange} />);
     const host = screen.getByLabelText('RoyalStory automatic battle');
 
     expect(container.querySelectorAll('.battle-host')).toHaveLength(1);
@@ -304,7 +324,7 @@ describe('App', () => {
   });
 
   it('groups the battle and diagnostic values into named regions', () => {
-    render(<App />);
+    render(<App record={playerRecord} onRecordChange={onRecordChange} />);
 
     const battleRegion = screen.getByRole('region', { name: 'Automatic battle' });
     const diagnosticsRegion = screen.getByRole('region', { name: 'Combat diagnostics' });
@@ -330,7 +350,9 @@ describe('App', () => {
       };
     });
 
-    const { unmount } = render(<StrictMode><App /></StrictMode>);
+    const { unmount } = render(
+      <StrictMode><App record={playerRecord} onRecordChange={onRecordChange} /></StrictMode>,
+    );
     expect(battleGame.createBattleGame).toHaveBeenCalledTimes(2);
     expect(firstDestroy).toHaveBeenCalledTimes(1);
 
@@ -357,7 +379,7 @@ describe('App', () => {
   });
 
   it('does not recreate the battle game when status changes', () => {
-    render(<App />);
+    render(<App record={playerRecord} onRecordChange={onRecordChange} />);
 
     act(() => callbacks.onStatus({
       ...runningStatus,
@@ -372,32 +394,38 @@ describe('App', () => {
     expect(battleGame.createBattleGame).toHaveBeenCalledTimes(1);
   });
 
-  it('shows chapter farming and starts a breakthrough from the campaign control', () => {
-    render(<App />);
+  it('shows chapter farming and requests a server-backed breakthrough from the campaign control', () => {
+    render(<App record={playerRecord} onRecordChange={onRecordChange} />);
 
     expect(screen.getByText('Chapter 1 / 36')).toBeInTheDocument();
     expect(screen.getByText('Whisperwood')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Start breakthrough' }));
 
-    expect(battleGame.startBreakthrough).toHaveBeenCalledOnce();
+    expect(playerApi.command).toHaveBeenCalledWith({
+      type: 'startBreakthrough',
+      expectedVersion: playerRecord.saveVersion,
+    });
   });
 
   it('keeps farming visible and offers the boss action after a breakthrough win', () => {
-    render(<App />);
+    render(<App record={playerRecord} onRecordChange={onRecordChange} />);
 
     act(() => callbacks.onStatus(unlockedFarmingStatus));
 
-    expect(screen.getByText('Farming â€” boss unlocked')).toBeInTheDocument();
+    expect(screen.getByText('Farming — boss unlocked')).toBeInTheDocument();
     const bossButton = screen.getByRole('button', { name: 'Challenge boss' });
     expect(bossButton).toBeEnabled();
     expect(screen.queryByRole('button', { name: 'Start breakthrough' })).not.toBeInTheDocument();
 
     fireEvent.click(bossButton);
-    expect(battleGame.startBoss).toHaveBeenCalledOnce();
+    expect(playerApi.command).toHaveBeenCalledWith({
+      type: 'startBoss',
+      expectedVersion: playerRecord.saveVersion,
+    });
   });
 
   it('shows no campaign action during breakthrough and boss battles', () => {
-    render(<App />);
+    render(<App record={playerRecord} onRecordChange={onRecordChange} />);
 
     act(() => callbacks.onStatus({
       ...runningStatus,
@@ -415,7 +443,7 @@ describe('App', () => {
   });
 
   it('shows no campaign action after completing the campaign', () => {
-    render(<App />);
+    render(<App record={playerRecord} onRecordChange={onRecordChange} />);
 
     act(() => callbacks.onStatus(campaignCompleteStatus));
 
@@ -424,7 +452,7 @@ describe('App', () => {
   });
 
   it('does not create a second game for campaign status updates', () => {
-    render(<App />);
+    render(<App record={playerRecord} onRecordChange={onRecordChange} />);
 
     act(() => callbacks.onStatus(unlockedFarmingStatus));
     act(() => callbacks.onStatus(campaignCompleteStatus));
@@ -433,7 +461,7 @@ describe('App', () => {
   });
 
   it('renders effective hero stats, total power, and all fourteen equipment slots', () => {
-    render(<App />);
+    render(<App record={playerRecord} onRecordChange={onRecordChange} />);
     act(() => callbacks.onStatus(equipmentStatus));
 
     const equipment = screen.getByRole('region', { name: 'Equipment' });
@@ -448,8 +476,8 @@ describe('App', () => {
     expect(screen.getByText('130', { selector: 'dd' })).toBeInTheDocument();
   });
 
-  it('orders inventory, compares a selection, and forwards equipment commands', () => {
-    render(<App />);
+  it('orders inventory, compares a selection, and forwards equipment commands to the server', async () => {
+    render(<App record={playerRecord} onRecordChange={onRecordChange} />);
     act(() => callbacks.onStatus(equipmentStatus));
 
     const inventory = screen.getByRole('region', { name: 'Inventory' });
@@ -462,14 +490,27 @@ describe('App', () => {
     expect(screen.getByText('Critical Rate').closest('div')).toHaveTextContent(/Critical Rate\s*\+3%/);
     expect(screen.getByText('Attack Speed').closest('div')).toHaveTextContent(/Attack Speed\s*\+2%/);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Equip selected' }));
-    expect(battleGame.equip).toHaveBeenCalledWith('item-2');
-    fireEvent.click(screen.getByRole('button', { name: 'Equip Best' }));
-    expect(battleGame.equipBest).toHaveBeenCalledOnce();
+    playerApi.command.mockResolvedValue({ kind: 'saved', record: playerRecord });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Equip selected' }));
+    });
+    expect(playerApi.command).toHaveBeenCalledWith({
+      type: 'equip',
+      expectedVersion: playerRecord.saveVersion,
+      itemId: 'item-2',
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Equip Best' }));
+    });
+    expect(playerApi.command).toHaveBeenLastCalledWith({
+      type: 'equipBest',
+      expectedVersion: playerRecord.saveVersion,
+    });
   });
 
   it('announces the latest drop and keeps one Phaser game through equipment-only updates', () => {
-    render(<App />);
+    render(<App record={playerRecord} onRecordChange={onRecordChange} />);
 
     act(() => callbacks.onStatus(equipmentStatus));
     expect(screen.getByRole('status', { name: 'Latest equipment drop' })).toHaveTextContent(
@@ -496,7 +537,7 @@ describe('App', () => {
   });
 
   it('pauses the controller and displayed status when the document becomes hidden', () => {
-    const { unmount } = render(<App />);
+    const { unmount } = render(<App record={playerRecord} onRecordChange={onRecordChange} />);
     battleGame.setPaused.mockClear();
     Object.defineProperty(document, 'hidden', { value: true, configurable: true });
 
@@ -512,7 +553,7 @@ describe('App', () => {
   });
 
   it('shows live diagnostics and surfaces engine errors', () => {
-    render(<App />);
+    render(<App record={playerRecord} onRecordChange={onRecordChange} />);
 
     expect(screen.getByText('Running')).toBeInTheDocument();
     expect(screen.getByText('01:05')).toBeInTheDocument();
