@@ -44,10 +44,10 @@ export function createAuthService(client: SupabaseClient, appOrigin: string) {
   const requestPasswordReset = async (emailValue: string): Promise<AuthResult> => {
     const email = emailValue.trim().toLowerCase();
     if (!email.includes('@') || email.length > 320) throw new TypeError('A valid email address is required');
-    await client.auth.resetPasswordForEmail(email, {
+    const { error } = await client.auth.resetPasswordForEmail(email, {
       redirectTo: new URL('/api/auth/recover', appOrigin).toString(),
     });
-    return { ok: true };
+    return error ? { ok: false, code: 'unavailable' } : { ok: true };
   };
 
   const updatePassword = async (password: string): Promise<AuthResult> => {
