@@ -13,7 +13,9 @@ In the intended Supabase project:
 5. In Auth URL Configuration, set the final Vercel HTTPS origin as the Site URL.
 6. Add these redirect destinations using the same production origin:
    - `/api/auth/confirm`
-   - `/reset-password`
+   - `/api/auth/recover`
+
+The recovery callback exchanges the one-time Supabase code for a secure server-managed session and then redirects the browser to `/reset-password`. Do not add a browser Supabase client to handle this exchange.
 
 ## 2. Database migrations
 
@@ -51,14 +53,15 @@ Run this sequence against the public production origin:
 2. Register a new email/password account.
 3. Follow the confirmation email and verify that sign-in succeeds.
 4. Reload the page and verify that the authenticated session and canonical save remain available.
-5. Request a password reset and verify delivery through the custom SMTP sender.
-6. Sign in from two browsers, make progress in one, then issue a command in the older browser and verify that the newer server state replaces it.
-7. Leave the account inactive and verify offline XP, gold, and equipment on return. Confirm the calculation caps at eight hours and no more than 20 drops.
-8. Verify that gold, level, equipment, and chapter progress survive reload and another device.
-9. Open Reset progress, type exact uppercase `RESET`, continue to the separate final panel, and reset permanently.
-10. Verify the account still exists but the canonical save is back at level 1 with initial gold, equipment, and chapter state.
-11. Confirm Escape, backdrop click, Cancel, and Go back never reset progress.
-12. Sign out and confirm the game disappears behind the authentication screen.
+5. Request a password reset, follow the email link, choose a new password, and verify that the recovery session is logged out afterward.
+6. Sign in with the new password and verify the canonical save remains available.
+7. Sign in from two browsers, make progress in one, then issue a command in the older browser and verify that the newer server state replaces it.
+8. Leave the account inactive and verify offline XP, gold, and equipment on return. Confirm the calculation caps at eight hours and no more than 20 drops.
+9. Verify that gold, level, equipment, and chapter progress survive reload and another device.
+10. Open Reset progress, type exact uppercase `RESET`, continue to the separate final panel, and reset permanently.
+11. Verify the account still exists but the canonical save is back at level 1 with initial gold, equipment, and chapter state.
+12. Confirm Escape, backdrop click, Cancel, and Go back never reset progress.
+13. Sign out and confirm the game disappears behind the authentication screen.
 
 Record only pass/fail results and the public deployment URL. Never record credentials or private account data.
 
