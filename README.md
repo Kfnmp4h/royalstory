@@ -1,6 +1,6 @@
-# RoyalStory Equipment Sandbox
+# RoyalStory
 
-RoyalStory Milestone 5 is a responsive campaign and equipment sandbox. React presents Ari's progression and loadout, Phaser draws the automatic battles, and pure TypeScript controllers own combat, campaign, and equipment state.
+RoyalStory is a responsive campaign game: React presents Ari's progression and loadout, Phaser draws automatic battles, and TypeScript controllers own combat and campaign state.
 
 ## Requirements
 
@@ -24,19 +24,16 @@ pnpm typecheck
 pnpm build
 ```
 
-## Milestone 5 features
+## Milestone 6 production behavior
 
-- Automatic XP from farming enemies, breakthrough Sentinels, and chapter bosses across 36 chapters.
-- Deterministic level progression from 1 to 200 with overflow XP and live ATK, DEF, and Max HP growth.
-- Equipment drops with Normal, Rare, Epic, Unique, and Legendary rarities.
-- Fourteen fixed slots: Hat, Cape, Top, Shoulder, Bottom, Belt, Gloves, Shoes, Ring, Ring 2, Necklace, Eye, Face, and Earring.
-- Every item has ATK, DEF, and Max HP main stats plus rarity-based substats.
-- All approved equipment stats affect live combat, including Accuracy, Evasion, critical hits, Attack Speed, Damage, Boss Monster Damage, and Normal Monster Damage.
-- A Character First interface with effective hero stats, Total Power, inventory comparison, manual equip, and Equip Best.
-- Accessible visual feedback for new drops, misses, and critical hits.
+- Supabase sessions are server-managed.
+- The Vercel API is the canonical state authority and uses optimistic versions for save commands.
+- Browser clients use same-origin `/api` routes only, with no browser game persistence.
+- The server applies bounded offline farming when canonical player state is loaded.
+- Password recovery flows through `/api/auth/recover` and then `/reset-password`.
 
-## Session-only equipment
+## Operations and versioning
 
-Progression, equipment, and inventory exist only in memory for the current browser session and reset on reload. Permanent saving is planned for Milestone 6. The current milestone does not use browser storage, cookies, filesystem saves, accounts, server syncing, or offline progress.
+See [the production setup guide](docs/production-setup.md) for deployment and operations.
 
-Milestone 5 does not include currencies, skills, item deletion, enhancement, or permanent persistence. All visuals are original and code-drawn.
+`package.json` remains at version `0.0.0` because this project has no established release tag, changelog, or package-version convention.

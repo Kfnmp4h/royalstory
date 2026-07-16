@@ -45,4 +45,19 @@ describe('production source contract', () => {
     expect(source).not.toMatch(/from ['"]@supabase\/(?:ssr|supabase-js)['"]/);
     expect(source).not.toMatch(/document\.cookie/);
   });
+
+  it('removes the temporary password reset diagnostic while preserving the reset-password rewrite', async () => {
+    const [passwordResetSource, vercelConfigSource] = await Promise.all([
+      readFile(join(root, 'api', 'auth', 'request-password-reset.ts'), 'utf8'),
+      readFile(join(root, 'vercel.json'), 'utf8'),
+    ]);
+    const vercelConfig = JSON.parse(vercelConfigSource) as {
+      rewrites?: Array<{ source?: string; destination?: string }>;
+    };
+
+    expect(passwordResetSource).not.toContain('password-reset redirect diagnostic');
+    expect(vercelConfig.rewrites).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: '/reset-password', destination: '/index.html' }),
+    ]));
+  });
 });

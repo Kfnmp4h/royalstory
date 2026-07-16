@@ -9,14 +9,6 @@ export async function POST(request: Request): Promise<Response> {
     const body = await readJsonObject(request);
     const email = typeof body.email === 'string' ? body.email : '';
     const appOrigin = new URL(request.url).origin;
-    const recoveryRedirect = new URL('/api/auth/recover', appOrigin).toString();
-    console.info('password-reset redirect diagnostic', {
-      requestUrl: request.url,
-      forwardedHost: request.headers.get('x-forwarded-host'),
-      forwardedProto: request.headers.get('x-forwarded-proto'),
-      appOrigin,
-      recoveryRedirect,
-    });
     const result = await createAuthService(auth.client, appOrigin).requestPasswordReset(email);
     return auth.applyCookies(jsonResponse(result, result.ok ? 200 : 503));
   } catch (error) {

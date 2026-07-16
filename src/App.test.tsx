@@ -157,8 +157,10 @@ describe('App server-authoritative experience', () => {
 
   it('pauses only the renderer when the page becomes hidden', () => {
     renderApp();
-    Object.defineProperty(document, 'hidden', { value: true, configurable: true });
-    document.dispatchEvent(new Event('visibilitychange'));
+    act(() => {
+      Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
 
     expect(battleGame.setPaused).toHaveBeenLastCalledWith(true);
     expect(screen.getByText('Paused')).toBeInTheDocument();
