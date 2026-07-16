@@ -44,4 +44,5 @@ export const authApi = Object.freeze({
   signIn: (credentials: AuthCredentials) => postJson('/api/auth/sign-in', credentials),
   signOut: () => postJson('/api/auth/sign-out'),
   requestPasswordReset: (email: string) => postJson('/api/auth/request-password-reset', { email }),
+  updatePassword: (password: string) => postJson('/api/auth/update-password', { password }),
 });
