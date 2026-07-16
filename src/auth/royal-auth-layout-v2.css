@@ -1,0 +1,93 @@
+.royal-auth-content--prototype {
+  position: relative;
+  width: min(100%, 900px);
+  min-height: 100dvh;
+  padding: clamp(24px, 4vh, 48px) 18px clamp(16px, 2.5vh, 28px);
+  grid-template-rows: auto 1fr auto;
+}
+
+.royal-auth-content--prototype > .royal-brand {
+  position: relative;
+  z-index: 3;
+  align-self: start;
+  width: min(58vw, 590px);
+  margin-top: clamp(2px, 1.2vh, 14px);
+}
+
+.royal-auth-content--prototype > .royal-auth-card {
+  position: relative;
+  z-index: 4;
+  align-self: end;
+  width: min(100%, 440px);
+  margin-bottom: clamp(4px, 1.4vh, 18px);
+  padding: 22px 26px 20px;
+}
+
+.royal-auth-heading {
+  margin-bottom: 8px;
+  font-size: clamp(1.3rem, 2.4vw, 1.7rem);
+}
+
+.royal-divider {
+  margin-bottom: 11px;
+}
+
+.royal-auth-form {
+  gap: 10px;
+}
+
+.royal-input__control {
+  min-height: 48px;
+}
+
+.royal-button--primary {
+  min-height: 50px;
+  margin-top: 3px;
+}
+
+.royal-auth-links {
+  margin-top: 6px;
+}
+
+@media (min-width: 1400px) and (min-height: 850px) {
+  .royal-auth-content--prototype > .royal-brand {
+    width: min(48vw, 640px);
+  }
+
+  .royal-auth-content--prototype > .royal-auth-card {
+    margin-bottom: clamp(8px, 2vh, 24px);
+  }
+}
+
+@media (max-width: 640px) {
+  .royal-auth-content--prototype {
+    padding: 14px 12px 12px;
+  }
+
+  .royal-auth-content--prototype > .royal-brand {
+    width: min(82vw, 410px);
+    margin-top: 0;
+  }
+
+  .royal-auth-content--prototype > .royal-auth-card {
+    width: min(100%, 390px);
+    margin-bottom: 0;
+    padding: 20px 17px 17px;
+  }
+}
+
+@media (max-height: 720px) and (min-width: 641px) {
+  .royal-auth-content--prototype {
+    padding-block: 12px 8px;
+  }
+
+  .royal-auth-content--prototype > .royal-brand {
+    width: min(43vw, 470px);
+  }
+
+  .royal-auth-content--prototype > .royal-auth-card {
+    width: min(100%, 420px);
+    margin-bottom: 0;
+    padding: 17px 22px 15px;
+  }
+}
