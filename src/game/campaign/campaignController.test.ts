@@ -249,6 +249,49 @@ describe('createCampaignController', () => {
     expect(campaign.getSnapshot()).toMatchObject({ mode: 'farming', combat: { activeRuntimeMs: 0, paused: true } });
   });
 
+  it('returns legacy combat events while draining only the latest transient presentation batch', () => {
+    const chapters = withEncounterBalance('farming', {
+      ...CHAPTERS[0].farming.balance,
+      player: { ...CHAPTERS[0].farming.balance.player, attackIntervalMs: 100 },
+      enemy: { ...CHAPTERS[0].farming.balance.enemy, attackIntervalMs: 1_000 },
+    });
+    const campaign = createCampaignController(chapters);
+
+    expect(campaign.advance(100)).toEqual([
+      { type: 'attack', attacker: 'player', target: 'enemy' },
+      { type: 'damage', target: 'enemy', amount: 18, hp: 57 },
+    ]);
+    expect(campaign.advance(100)).toEqual([
+      { type: 'attack', attacker: 'player', target: 'enemy' },
+      { type: 'damage', target: 'enemy', amount: 18, hp: 39 },
+    ]);
+    expect(campaign.consumePresentationEvents!()).toEqual([
+      { type: 'attack_started', actorId: 'player', targetId: 'enemy', timestampMs: 200 },
+      { type: 'hit_landed', actorId: 'player', targetId: 'enemy', damage: 18, critical: false, resultingHealth: 39, timestampMs: 200 },
+      { type: 'health_changed', actorId: 'player', targetId: 'enemy', resultingHealth: 39, timestampMs: 200 },
+    ]);
+    expect(campaign.consumePresentationEvents!()).toEqual([]);
+    expect(JSON.stringify(campaign.getPersistentState!())).not.toContain('presentationEvents');
+  });
+
+  it('clears stale presentation batches when pausing or resuming', () => {
+    const chapters = withEncounterBalance('farming', {
+      ...CHAPTERS[0].farming.balance,
+      player: { ...CHAPTERS[0].farming.balance.player, attackIntervalMs: 100 },
+      enemy: { ...CHAPTERS[0].farming.balance.enemy, attackIntervalMs: 1_000 },
+    });
+    const campaign = createCampaignController(chapters);
+
+    campaign.advance(100);
+    campaign.pause();
+    expect(campaign.consumePresentationEvents!()).toEqual([]);
+
+    campaign.resume();
+    campaign.advance(100);
+    campaign.resume();
+    expect(campaign.consumePresentationEvents!()).toEqual([]);
+  });
+
   it('awards farming XP once per enemy death and none while paused', () => {
     const chapters = CHAPTERS.map((chapter) => ({
       ...chapter,

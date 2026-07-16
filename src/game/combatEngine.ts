@@ -1,4 +1,5 @@
 import { COMBAT_BALANCE, EQUIPMENT_BALANCE } from './balance';
+import type { CombatAdvanceResult, CombatPresentationEvent } from './presentation/combatPresentationEvents';
 import type {
   ActorId,
   CombatBalance,
@@ -90,10 +91,16 @@ export const createCombatEngine = (
     events.push({ type: 'respawn', actor: actorId });
   };
 
-  const attack = (attackerId: ActorId, events: CombatEvent[]) => {
+  const attack = (
+    attackerId: ActorId,
+    events: CombatEvent[],
+    presentationEvents: CombatPresentationEvent[],
+  ) => {
     const attacker = attackerId === 'player' ? player : enemy;
     const target = attackerId === 'player' ? enemy : player;
     if (!attacker.alive || !target.alive) return;
+
+    const timestampMs = activeRuntimeMs;
 
     const accuracy = attackerId === 'player' ? player.accuracy : 0;
     const evasion = attackerId === 'enemy' ? player.evasion : 0;
@@ -105,8 +112,23 @@ export const createCombatEngine = (
 
     totalAttacks += 1;
     events.push({ type: 'attack', attacker: attacker.id, target: target.id });
+    presentationEvents.push({
+      type: 'attack_started',
+      actorId: attacker.id,
+      targetId: target.id,
+      timestampMs,
+    });
     if (!hit) {
       events.push({ type: 'miss', attacker: attacker.id, target: target.id });
+      presentationEvents.push({
+        type: 'attack_missed',
+        actorId: attacker.id,
+        targetId: target.id,
+        damage: 0,
+        critical: false,
+        resultingHealth: target.hp,
+        timestampMs,
+      });
       return;
     }
 
@@ -124,16 +146,58 @@ export const createCombatEngine = (
     }
     target.hp = Math.max(0, target.hp - damage);
     events.push({ type: 'damage', target: target.id, amount: damage, hp: target.hp });
+    if (critical) {
+      presentationEvents.push({
+        type: 'critical_hit_landed',
+        actorId: 'player',
+        targetId: 'enemy',
+        damage,
+        critical: true,
+        resultingHealth: target.hp,
+        timestampMs,
+      });
+    } else {
+      presentationEvents.push({
+        type: 'hit_landed',
+        actorId: attacker.id,
+        targetId: target.id,
+        damage,
+        critical: false,
+        resultingHealth: target.hp,
+        timestampMs,
+      });
+    }
+    presentationEvents.push({
+      type: 'health_changed',
+      actorId: attacker.id,
+      targetId: target.id,
+      resultingHealth: target.hp,
+      timestampMs,
+    });
     if (target.hp === 0) {
+      if (attackerId === 'player') {
+        presentationEvents.push({
+          type: 'enemy_defeated',
+          actorId: 'player',
+          targetId: 'enemy',
+          damage,
+          critical,
+          resultingHealth: 0,
+          timestampMs,
+        });
+      }
       target.alive = false;
       beginRecovery(target.id, events);
     }
   };
 
-  const advance = (elapsedMs: number): CombatEvent[] => {
-    if (!Number.isFinite(elapsedMs) || elapsedMs <= 0 || paused) return [];
+  const advanceInternal = (elapsedMs: number): CombatAdvanceResult => {
+    if (!Number.isFinite(elapsedMs) || elapsedMs <= 0 || paused) {
+      return { events: [], presentationEvents: [] };
+    }
 
     const events: CombatEvent[] = [];
+    const presentationEvents: CombatPresentationEvent[] = [];
     let remainingMs = elapsedMs;
     while (remainingMs > 0) {
       const sliceMs = Math.min(balance.sliceMs, remainingMs);
@@ -158,17 +222,21 @@ export const createCombatEngine = (
         && playerAttackAccumulatorMs >= player.effectiveAttackIntervalMs
       ) {
         playerAttackAccumulatorMs -= player.effectiveAttackIntervalMs;
-        attack('player', events);
+        attack('player', events, presentationEvents);
       }
       while (phase === 'fighting' && enemyAttackAccumulatorMs >= enemy.attackIntervalMs) {
         enemyAttackAccumulatorMs -= enemy.attackIntervalMs;
-        attack('enemy', events);
+        attack('enemy', events, presentationEvents);
       }
 
       remainingMs -= sliceMs;
     }
-    return events;
+    return { events, presentationEvents };
   };
+
+  const advance = (elapsedMs: number): CombatEvent[] => advanceInternal(elapsedMs).events as CombatEvent[];
+
+  const advanceWithPresentation = (elapsedMs: number): CombatAdvanceResult => advanceInternal(elapsedMs);
 
   const pause = (): CombatEvent[] => {
     if (paused) return [];
@@ -240,5 +308,5 @@ export const createCombatEngine = (
 
   const getPersistentState = (): CombatSnapshot => getSnapshot();
 
-  return { advance, pause, resume, applyPlayerStats, getSnapshot, getPersistentState };
+  return { advance, advanceWithPresentation, pause, resume, applyPlayerStats, getSnapshot, getPersistentState };
 };

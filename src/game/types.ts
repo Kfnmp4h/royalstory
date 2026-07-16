@@ -1,3 +1,5 @@
+import type { CombatAdvanceResult } from './presentation/combatPresentationEvents';
+
 export type ActorId = 'player' | 'enemy';
 export type CombatPhase = 'fighting' | 'enemy-defeated' | 'player-defeated';
 export type MonsterDamageKind = 'normal' | 'boss';
@@ -74,6 +76,7 @@ export interface CombatEngineOptions {
 
 export interface CombatEngine {
   advance(elapsedMs: number): CombatEvent[];
+  advanceWithPresentation(elapsedMs: number): CombatAdvanceResult;
   pause(): CombatEvent[];
   resume(): CombatEvent[];
   applyPlayerStats(stats: PlayerCombatProfile): void;

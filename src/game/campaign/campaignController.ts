@@ -1,6 +1,7 @@
 import { createCombatEngine } from '../combatEngine';
 import { getEncounterXp } from '../balance';
 import { createEquipmentController } from '../equipment/equipmentController';
+import type { CombatPresentationEvent } from '../presentation/combatPresentationEvents';
 import { createProgressionController } from '../progression/progressionController';
 import type { CombatEngine, CombatEvent, CombatSnapshot } from '../types';
 import { CHAPTERS, getChapter } from './campaignDefinitions';
@@ -82,6 +83,7 @@ export const createCampaignController = (
   let bossUnlocked = initial?.bossUnlocked ?? false;
   let encounter: EncounterDefinition | null;
   let engine: CombatEngine | null;
+  let presentationEvents: readonly CombatPresentationEvent[] = [];
   const progression = createProgressionController(initial?.progression);
   const equipment = createEquipmentController({
     random: options.equipmentRandom ?? Math.random,
@@ -127,8 +129,11 @@ export const createCampaignController = (
   }
 
   const advance = (elapsedMs: number): CombatEvent[] => {
+    presentationEvents = [];
     if (!activeModes.has(mode) || engine === null) return [];
-    const events = engine.advance(elapsedMs);
+    const result = engine.advanceWithPresentation(elapsedMs);
+    presentationEvents = result.presentationEvents;
+    const events = result.events as CombatEvent[];
     const deaths = events.filter((event): event is Extract<CombatEvent, { type: 'death' }> => event.type === 'death');
 
     for (const death of deaths) {
@@ -199,10 +204,27 @@ export const createCampaignController = (
     combat: engine?.getPersistentState() ?? null,
   });
 
+  const consumePresentationEvents = (): readonly CombatPresentationEvent[] => {
+    const events = presentationEvents;
+    presentationEvents = [];
+    return events;
+  };
+
+  const pause = (): CombatEvent[] => {
+    presentationEvents = [];
+    return engine?.pause() ?? [];
+  };
+
+  const resume = (): CombatEvent[] => {
+    presentationEvents = [];
+    return engine?.resume() ?? [];
+  };
+
   return {
     advance,
-    pause: () => engine?.pause() ?? [],
-    resume: () => engine?.resume() ?? [],
+    consumePresentationEvents,
+    pause,
+    resume,
     startBreakthrough: () => {
       if (mode === 'farming' && !bossUnlocked) startEncounter(chapter.breakthrough, 'breakthrough');
     },

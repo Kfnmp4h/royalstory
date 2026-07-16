@@ -1,5 +1,6 @@
 import type { CombatEvent, CombatSnapshot, CombatBalance } from '../types';
 import type { EquipmentSnapshot, RandomSource } from '../equipment/equipmentTypes';
+import type { CombatPresentationEvent } from '../presentation/combatPresentationEvents';
 import type { ProgressionSnapshot } from '../progression/progressionTypes';
 import type { CampaignPersistentState } from '../save/saveTypes';
 
@@ -47,6 +48,7 @@ export interface CampaignControllerOptions {
 
 export interface CampaignController {
   advance(elapsedMs: number): CombatEvent[];
+  consumePresentationEvents?(): readonly CombatPresentationEvent[];
   pause(): CombatEvent[];
   resume(): CombatEvent[];
   startBreakthrough(): void;

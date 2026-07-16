@@ -77,6 +77,87 @@ describe('createCombatEngine', () => {
     expect(engine.getSnapshot().totalAttacks).toBe(1);
   });
 
+  it('emits legacy and presentation events for a deterministic normal hit', () => {
+    const engine = createCombatEngine(
+      makeBalance({ player: { attackIntervalMs: 100 }, enemy: { attackIntervalMs: 1_000 } }),
+      { random: scriptedRandom(0, 0.5) },
+    );
+
+    const result = engine.advanceWithPresentation(100);
+
+    expect(result.events).toEqual([
+      { type: 'attack', attacker: 'player', target: 'enemy' },
+      { type: 'damage', target: 'enemy', amount: 18, hp: 72 },
+    ]);
+    expect(result.presentationEvents).toEqual([
+      { type: 'attack_started', actorId: 'player', targetId: 'enemy', timestampMs: 100 },
+      { type: 'hit_landed', actorId: 'player', targetId: 'enemy', damage: 18, critical: false, resultingHealth: 72, timestampMs: 100 },
+      { type: 'health_changed', actorId: 'player', targetId: 'enemy', resultingHealth: 72, timestampMs: 100 },
+    ]);
+    expect(result.presentationEvents.every((event) => Number.isFinite(event.timestampMs))).toBe(true);
+  });
+
+  it('emits a critical presentation event without a normal-hit event', () => {
+    const engine = createCombatEngine(
+      makeBalance({ player: { attackIntervalMs: 100 }, enemy: { attackIntervalMs: 1_000 } }),
+      { random: scriptedRandom(0, 0) },
+    );
+
+    const result = engine.advanceWithPresentation(100);
+
+    expect(result.events).toEqual([
+      { type: 'attack', attacker: 'player', target: 'enemy' },
+      { type: 'critical', attacker: 'player', target: 'enemy' },
+      { type: 'damage', target: 'enemy', amount: 36, hp: 54 },
+    ]);
+    expect(result.presentationEvents).toEqual([
+      { type: 'attack_started', actorId: 'player', targetId: 'enemy', timestampMs: 100 },
+      { type: 'critical_hit_landed', actorId: 'player', targetId: 'enemy', damage: 36, critical: true, resultingHealth: 54, timestampMs: 100 },
+      { type: 'health_changed', actorId: 'player', targetId: 'enemy', resultingHealth: 54, timestampMs: 100 },
+    ]);
+    expect(result.presentationEvents).not.toContainEqual(expect.objectContaining({ type: 'hit_landed' }));
+  });
+
+  it('emits a zero-damage presentation miss without a health change', () => {
+    const engine = createCombatEngine(
+      makeBalance({ player: { attackIntervalMs: 100 }, enemy: { attackIntervalMs: 1_000 } }),
+      { random: scriptedRandom(0.95) },
+    );
+
+    const result = engine.advanceWithPresentation(100);
+
+    expect(result.events).toEqual([
+      { type: 'attack', attacker: 'player', target: 'enemy' },
+      { type: 'miss', attacker: 'player', target: 'enemy' },
+    ]);
+    expect(result.presentationEvents).toEqual([
+      { type: 'attack_started', actorId: 'player', targetId: 'enemy', timestampMs: 100 },
+      { type: 'attack_missed', actorId: 'player', targetId: 'enemy', damage: 0, critical: false, resultingHealth: 90, timestampMs: 100 },
+    ]);
+    expect(result.presentationEvents).not.toContainEqual(expect.objectContaining({ type: 'health_changed' }));
+  });
+
+  it('emits enemy_defeated after the presentation hit and health events', () => {
+    const engine = createCombatEngine(
+      makeBalance({ player: { attack: 90, attackIntervalMs: 100 }, enemy: { attackIntervalMs: 1_000 } }),
+      { random: scriptedRandom(0, 0.5) },
+    );
+
+    const result = engine.advanceWithPresentation(100);
+
+    expect(result.events).toEqual([
+      { type: 'attack', attacker: 'player', target: 'enemy' },
+      { type: 'damage', target: 'enemy', amount: 90, hp: 0 },
+      { type: 'death', actor: 'enemy' },
+    ]);
+    expect(result.presentationEvents).toEqual([
+      { type: 'attack_started', actorId: 'player', targetId: 'enemy', timestampMs: 100 },
+      { type: 'hit_landed', actorId: 'player', targetId: 'enemy', damage: 90, critical: false, resultingHealth: 0, timestampMs: 100 },
+      { type: 'health_changed', actorId: 'player', targetId: 'enemy', resultingHealth: 0, timestampMs: 100 },
+      { type: 'enemy_defeated', actorId: 'player', targetId: 'enemy', damage: 90, critical: false, resultingHealth: 0, timestampMs: 100 },
+    ]);
+  });
+
   it('lets Mossling attack on its independent interval', () => {
     const engine = createCombatEngine();
     engine.advance(1_300);
