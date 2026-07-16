@@ -1,5 +1,6 @@
 import type { CampaignMode } from '../campaign/campaignTypes';
 import type { EquippedItems, EquipmentItem } from '../equipment/equipmentTypes';
+import type { CombatSnapshot } from '../types';
 
 export interface PersistentProgressionState {
   readonly level: number;
@@ -21,7 +22,7 @@ export interface CampaignPersistentState {
   readonly bossUnlocked: boolean;
   readonly progression: PersistentProgressionState;
   readonly equipment: PersistentEquipmentState;
-  readonly combat: null;
+  readonly combat: CombatSnapshot | null;
 }
 
 export interface PlayerSaveState {
