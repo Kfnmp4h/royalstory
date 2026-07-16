@@ -45,7 +45,7 @@ export function createAuthService(client: SupabaseClient, appOrigin: string) {
     const email = emailValue.trim().toLowerCase();
     if (!email.includes('@') || email.length > 320) throw new TypeError('A valid email address is required');
     await client.auth.resetPasswordForEmail(email, {
-      redirectTo: new URL('/reset-password', appOrigin).toString(),
+      redirectTo: new URL('/api/auth/recover', appOrigin).toString(),
     });
     return { ok: true };
   };
