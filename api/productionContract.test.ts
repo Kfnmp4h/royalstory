@@ -1,10 +1,29 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import * as confirm from './auth/confirm';
+import * as requestPasswordReset from './auth/request-password-reset';
+import * as signIn from './auth/sign-in';
+import * as signOut from './auth/sign-out';
+import * as signUp from './auth/sign-up';
+import * as player from './player';
+import * as playerCommands from './player/commands';
+import * as playerReset from './player/reset';
 
 const root = process.cwd();
 const productionRoots = ['src', 'api'] as const;
 const sourceExtensions = new Set(['.ts', '.tsx', '.js', '.jsx']);
+
+const routes = [
+  { path: 'api/auth/confirm.ts', method: 'GET', handler: confirm.GET, module: confirm },
+  { path: 'api/auth/request-password-reset.ts', method: 'POST', handler: requestPasswordReset.POST, module: requestPasswordReset },
+  { path: 'api/auth/sign-in.ts', method: 'POST', handler: signIn.POST, module: signIn },
+  { path: 'api/auth/sign-out.ts', method: 'POST', handler: signOut.POST, module: signOut },
+  { path: 'api/auth/sign-up.ts', method: 'POST', handler: signUp.POST, module: signUp },
+  { path: 'api/player.ts', method: 'GET', handler: player.GET, module: player },
+  { path: 'api/player/commands.ts', method: 'POST', handler: playerCommands.POST, module: playerCommands },
+  { path: 'api/player/reset.ts', method: 'POST', handler: playerReset.POST, module: playerReset },
+] as const;
 
 const extensionOf = (path: string): string => {
   const match = path.match(/\.[^.]+$/);
@@ -44,5 +63,10 @@ describe('production source contract', () => {
     const source = browserSource.join('\n');
     expect(source).not.toMatch(/from ['"]@supabase\/(?:ssr|supabase-js)['"]/);
     expect(source).not.toMatch(/document\.cookie/);
+  });
+
+  it.each(routes)('$path exports $method as its Vercel Web Handler without a default export', ({ handler, module }) => {
+    expect(handler).toEqual(expect.any(Function));
+    expect(module).not.toHaveProperty('default');
   });
 });

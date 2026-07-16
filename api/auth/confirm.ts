@@ -1,7 +1,7 @@
 import { getServerEnv } from '../_lib/env';
 import { createRequestSupabase } from '../_lib/supabaseServer';
 
-export default async function handler(request: Request): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   const auth = createRequestSupabase(request);
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
