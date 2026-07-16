@@ -1,4 +1,5 @@
-import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import { App } from './App';
 import { authApi } from './game/api/authApi';
 import { playerApi } from './game/api/playerApi';
