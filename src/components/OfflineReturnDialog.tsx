@@ -12,6 +12,8 @@ const formatElapsed = (elapsedMs: number): string => {
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 };
 
+const formatNumber = (value: number): string => value.toLocaleString('en-US');
+
 export function OfflineReturnDialog({ summary, onClose }: OfflineReturnDialogProps) {
   return (
     <div className="dialog-backdrop" role="presentation">
@@ -25,9 +27,9 @@ export function OfflineReturnDialog({ summary, onClose }: OfflineReturnDialogPro
         <h2 id="offline-return-title">Offline rewards</h2>
         <dl className="offline-summary">
           <div><dt>Time away</dt><dd>{formatElapsed(summary.elapsedMs)}</dd></div>
-          <div><dt>Enemies defeated</dt><dd>{summary.kills}</dd></div>
-          <div><dt>XP earned</dt><dd>{summary.xp}</dd></div>
-          <div><dt>Gold earned</dt><dd>{summary.gold}</dd></div>
+          <div><dt>Enemies defeated</dt><dd>{formatNumber(summary.kills)}</dd></div>
+          <div><dt>XP earned</dt><dd>{formatNumber(summary.xp)}</dd></div>
+          <div><dt>Gold earned</dt><dd>{formatNumber(summary.gold)}</dd></div>
         </dl>
         <div className="offline-drops">
           <h3>Equipment found ({summary.drops.length})</h3>
