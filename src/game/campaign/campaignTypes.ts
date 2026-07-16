@@ -54,5 +54,9 @@ export interface CampaignController {
   equip(itemId: string): void;
   equipBest(): void;
   getSnapshot(): CampaignSnapshot;
+  getPersistentState?(): CampaignPersistentState;
+}
+
+export interface PersistentCampaignController extends CampaignController {
   getPersistentState(): CampaignPersistentState;
 }
