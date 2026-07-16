@@ -7,6 +7,7 @@ import './dialogs.css';
 import './ui/tokens/royal-tokens.css';
 import './ui/royal-components.css';
 import './auth/royal-auth.css';
+import './auth/royal-auth-target.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode><AuthRoot /></StrictMode>,
