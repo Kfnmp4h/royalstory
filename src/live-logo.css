@@ -1,0 +1,33 @@
+.auth-panel h1 {
+  width: min(100%, 430px);
+  aspect-ratio: 3 / 1.45;
+  margin: -10px auto 2px;
+  overflow: hidden;
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+  text-indent: -9999px;
+  background: url('./assets/logo/royalstory-logo.png') center / contain no-repeat;
+  filter:
+    drop-shadow(0 8px 14px rgb(0 0 0 / 48%))
+    drop-shadow(0 0 16px rgb(236 190 77 / 24%));
+}
+
+.auth-panel h1::before {
+  display: none;
+  content: none;
+}
+
+@media (max-width: 640px) {
+  .auth-panel h1 {
+    width: min(100%, 350px);
+    margin-top: -6px;
+  }
+}
+
+@media (max-height: 760px) and (min-width: 641px) {
+  .auth-panel h1 {
+    width: min(100%, 320px);
+    margin-top: -12px;
+  }
+}
