@@ -9,7 +9,7 @@ interface RoyalAuthSceneProps {
 export function RoyalAuthScene({ children, loadingText }: RoyalAuthSceneProps) {
   return (
     <main className="royal-auth-scene">
-      <div className="royal-auth-backdrop" aria-hidden="true" />
+      <div className="royal-auth-backdrop" style={{ backgroundImage: "linear-gradient(rgb(15 6 22 / 18%), rgb(5 2 9 / 48%)), url('/art/royalstory/login-throne-room.svg')", backgroundSize: 'cover', backgroundPosition: 'center' }} aria-hidden="true" />
       <div className="royal-auth-architecture" aria-hidden="true" />
       <div className="royal-auth-depth" aria-hidden="true"><span className="royal-auth-window royal-auth-window-left" /><span className="royal-auth-throne" /><span className="royal-auth-window royal-auth-window-right" /></div>
       <div className="royal-auth-carpet" aria-hidden="true" />
