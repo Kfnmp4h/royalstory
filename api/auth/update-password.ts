@@ -3,7 +3,7 @@ import { getServerEnv } from '../_lib/env';
 import { handleApiError, jsonResponse, methodNotAllowed, readJsonObject } from '../_lib/http';
 import { createRequestSupabase, requireUser } from '../_lib/supabaseServer';
 
-export default async function handler(request: Request): Promise<Response> {
+export async function POST(request: Request): Promise<Response> {
   if (request.method !== 'POST') return methodNotAllowed(['POST']);
   const auth = createRequestSupabase(request);
 
