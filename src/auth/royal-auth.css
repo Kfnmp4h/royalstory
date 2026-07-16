@@ -1,0 +1,239 @@
+.royal-auth-scene {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  min-height: 100vh;
+  min-height: 100dvh;
+  place-items: center;
+  overflow: hidden;
+  padding: clamp(18px, 4vw, 48px);
+  color: #29172f;
+  background: #130c1c;
+  animation: royal-scene-in 700ms ease-out both;
+}
+
+.royal-auth-backdrop,
+.royal-auth-architecture,
+.royal-auth-banner,
+.royal-auth-brazier,
+.royal-auth-particles,
+.royal-auth-mist {
+  position: absolute;
+  pointer-events: none;
+}
+
+.royal-auth-backdrop {
+  inset: 0;
+  z-index: -8;
+  background:
+    radial-gradient(circle at 50% 24%, rgb(117 75 137 / 32%), transparent 24rem),
+    linear-gradient(180deg, #2a1737 0%, #160d21 52%, #090711 100%);
+}
+
+.royal-auth-architecture {
+  inset: 0;
+  z-index: -7;
+  opacity: 0.92;
+  background:
+    linear-gradient(90deg, rgb(12 8 18 / 95%) 0 8%, transparent 8% 92%, rgb(12 8 18 / 95%) 92%),
+    repeating-linear-gradient(90deg, transparent 0 15%, rgb(226 185 101 / 10%) 15.2% 15.8%, transparent 16% 33%);
+  box-shadow: inset 0 -18vh 80px rgb(0 0 0 / 68%);
+}
+
+.royal-auth-banner {
+  top: 8vh;
+  z-index: -4;
+  display: grid;
+  width: clamp(72px, 8vw, 122px);
+  height: clamp(180px, 34vh, 360px);
+  place-items: center;
+  border: 3px solid #8c6a2f;
+  color: #e8ca77;
+  background: linear-gradient(180deg, #5d1c58, #281033);
+  box-shadow: 0 18px 30px rgb(0 0 0 / 40%), inset 0 0 28px rgb(255 214 107 / 12%);
+  clip-path: polygon(0 0, 100% 0, 100% 86%, 50% 100%, 0 86%);
+}
+
+.royal-auth-banner span { font-size: clamp(2rem, 4vw, 4rem); }
+.royal-auth-banner-left { left: 8vw; }
+.royal-auth-banner-right { right: 8vw; }
+
+.royal-auth-brazier {
+  bottom: 8vh;
+  z-index: -3;
+  width: clamp(90px, 11vw, 160px);
+  height: clamp(130px, 22vh, 230px);
+}
+
+.royal-auth-brazier::after {
+  content: '';
+  position: absolute;
+  inset: auto 18% 0;
+  height: 48%;
+  border: 3px solid #7c5a28;
+  border-radius: 12px 12px 30px 30px;
+  background: linear-gradient(90deg, #2f2330, #826139 48%, #30242f);
+  box-shadow: 0 20px 30px rgb(0 0 0 / 55%);
+}
+
+.royal-auth-brazier-left { left: 9vw; }
+.royal-auth-brazier-right { right: 9vw; }
+
+.royal-auth-fire,
+.royal-auth-fire::before,
+.royal-auth-fire::after {
+  position: absolute;
+  border-radius: 54% 46% 62% 38% / 72% 62% 38% 28%;
+  background: radial-gradient(circle at 50% 70%, #fff5a2 0 18%, #ffb12f 35%, #e34924 64%, transparent 68%);
+}
+
+.royal-auth-fire {
+  left: 23%;
+  bottom: 38%;
+  width: 54%;
+  height: 54%;
+  transform-origin: 50% 100%;
+  animation: royal-fire 620ms ease-in-out infinite alternate;
+}
+
+.royal-auth-brazier-right .royal-auth-fire { animation-delay: 180ms; }
+.royal-auth-fire::before,
+.royal-auth-fire::after { content: ''; inset: 12% 20% 2%; }
+.royal-auth-fire::before { transform: translate(-22%, 4%) scale(.72); }
+.royal-auth-fire::after { transform: translate(25%, 10%) scale(.62); }
+
+.royal-auth-fire-glow {
+  position: absolute;
+  inset: 1% -20% 16%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 154 45 / 42%), transparent 68%);
+  animation: royal-glow 900ms ease-in-out infinite alternate;
+}
+
+.royal-auth-particles {
+  inset: 0;
+  z-index: -2;
+  opacity: .55;
+  background-image:
+    radial-gradient(circle, #ffd66b 0 1px, transparent 2px),
+    radial-gradient(circle, #ff9c46 0 1px, transparent 2px);
+  background-size: 96px 120px, 130px 160px;
+  animation: royal-particles 8s linear infinite;
+}
+
+.royal-auth-mist {
+  inset: auto -10% -6% -10%;
+  z-index: -1;
+  height: 30vh;
+  opacity: .5;
+  background: radial-gradient(ellipse at center, rgb(218 206 232 / 28%), transparent 65%);
+  filter: blur(18px);
+  animation: royal-mist 9s ease-in-out infinite alternate;
+}
+
+.royal-auth-content {
+  position: relative;
+  z-index: 5;
+  display: grid;
+  width: min(100%, 520px);
+  justify-items: center;
+  gap: clamp(18px, 3vh, 30px);
+}
+
+.royal-story-logo {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  color: #f7dc87;
+  font-family: Georgia, 'Times New Roman', serif;
+  text-align: center;
+  text-shadow: 0 3px 0 #593b14, 0 8px 28px rgb(255 201 74 / 38%);
+  animation: royal-logo-in 900ms 420ms cubic-bezier(.18,.8,.22,1) both;
+}
+
+.royal-story-logo-text { font-size: clamp(3rem, 9vw, 6.2rem); font-weight: 800; line-height: .9; letter-spacing: -.055em; }
+.royal-story-logo-crown { font-size: clamp(2rem, 5vw, 3.8rem); line-height: .7; }
+.royal-story-logo-gem { width: 13px; height: 13px; margin-top: 8px; transform: rotate(45deg); border: 2px solid #ffd66b; background: #6d2b79; box-shadow: 0 0 18px #ffd66b; }
+.royal-story-logo::after { content: ''; position: absolute; inset: 0; transform: translateX(-160%) skewX(-18deg); background: linear-gradient(90deg, transparent, rgb(255 255 255 / 42%), transparent); animation: royal-shimmer 1.1s 1.1s ease-out 1 both; }
+
+.royal-auth-card {
+  width: 100%;
+  padding: clamp(24px, 5vw, 40px);
+  border: 3px solid #b88b38;
+  border-radius: 24px;
+  background:
+    linear-gradient(rgb(255 255 255 / 52%), rgb(255 255 255 / 12%)),
+    #eadfca;
+  box-shadow: 0 24px 75px rgb(0 0 0 / 54%), inset 0 0 0 5px rgb(117 75 34 / 12%);
+  animation: royal-card-in 700ms 1s ease-out both;
+}
+
+.royal-auth-kicker,
+.royal-auth-heading { margin: 0; text-align: center; }
+.royal-auth-kicker { color: #785a27; font-size: .74rem; font-weight: 850; letter-spacing: .16em; text-transform: uppercase; }
+.royal-auth-heading { margin-top: 8px; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(1.8rem, 6vw, 2.7rem); color: #3d2145; }
+.royal-auth-form { display: grid; gap: 16px; margin-top: 24px; }
+.royal-auth-field { display: grid; gap: 7px; color: #4b354f; font-weight: 800; }
+.royal-auth-field input {
+  width: 100%; min-height: 48px; padding: 11px 13px; border: 2px solid #9c7a47; border-radius: 11px;
+  color: #24162a; background: #fffdf7; font: inherit; box-shadow: inset 0 2px 5px rgb(65 39 22 / 10%);
+}
+.royal-auth-field input:focus { border-color: #6f3578; }
+.royal-auth-primary {
+  min-height: 48px; margin-top: 4px; border: 2px solid #fff1bd; border-radius: 12px; color: #29172f;
+  background: linear-gradient(180deg, #f6dc88, #c79231); font: inherit; font-weight: 900; cursor: pointer;
+  box-shadow: 0 8px 18px rgb(120 76 18 / 28%); transition: transform 140ms ease, filter 140ms ease;
+}
+.royal-auth-primary:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+.royal-auth-primary:active:not(:disabled) { transform: translateY(1px); }
+.royal-auth-primary:disabled { cursor: wait; opacity: .65; }
+.royal-auth-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 18px; margin-top: 18px; }
+.royal-auth-links button,
+.royal-auth-invalid button { min-height: 44px; border: 0; color: #5d2f68; background: transparent; font: inherit; font-weight: 800; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.royal-auth-message,
+.royal-auth-invalid { margin: 16px 0 0; padding: 11px 13px; border-radius: 10px; color: #4e294f; background: rgb(111 53 120 / 10%); text-align: center; }
+.royal-auth-invalid p { margin: 0; }
+.royal-auth-loading { padding: 16px 22px; border: 2px solid #b88b38; border-radius: 14px; color: #3d2145; background: #eadfca; font-weight: 850; }
+
+@keyframes royal-scene-in { from { opacity: 0; background: #000; } to { opacity: 1; } }
+@keyframes royal-logo-in { from { opacity: 0; transform: translateY(-28px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes royal-card-in { from { opacity: 0; transform: translateY(22px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes royal-fire { from { transform: scale(.9, .96) rotate(-2deg); } to { transform: scale(1.07, 1.12) rotate(2deg); } }
+@keyframes royal-glow { from { opacity: .55; transform: scale(.94); } to { opacity: .9; transform: scale(1.08); } }
+@keyframes royal-particles { from { background-position: 0 100%, 40px 100%; } to { background-position: 0 -20%, 40px -30%; } }
+@keyframes royal-mist { from { transform: translateX(-3%); } to { transform: translateX(3%); } }
+@keyframes royal-shimmer { from { transform: translateX(-160%) skewX(-18deg); } to { transform: translateX(160%) skewX(-18deg); } }
+
+@media (max-width: 640px) {
+  .royal-auth-scene { align-items: center; padding: 16px; }
+  .royal-auth-banner { display: none; }
+  .royal-auth-architecture { opacity: .5; }
+  .royal-auth-brazier { bottom: -5vh; width: 92px; height: 142px; opacity: .72; }
+  .royal-auth-brazier-left { left: -18px; }
+  .royal-auth-brazier-right { right: -18px; }
+  .royal-auth-particles { opacity: .24; background-size: 160px 190px, 220px 250px; }
+  .royal-auth-content { gap: 16px; }
+  .royal-story-logo-text { font-size: clamp(2.7rem, 16vw, 4.5rem); }
+  .royal-auth-card { border-radius: 18px; padding: 22px 18px; }
+  .royal-auth-links { display: grid; gap: 2px; }
+}
+
+@media (max-height: 680px) and (min-width: 641px) {
+  .royal-auth-scene { padding-block: 12px; }
+  .royal-auth-content { gap: 10px; }
+  .royal-story-logo-text { font-size: 3.4rem; }
+  .royal-story-logo-crown { font-size: 2rem; }
+  .royal-auth-card { padding: 20px 28px; }
+  .royal-auth-form { margin-top: 14px; gap: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .royal-auth-scene,
+  .royal-story-logo,
+  .royal-story-logo::after,
+  .royal-auth-card,
+  .royal-auth-fire,
+  .royal-auth-fire-glow,
+  .royal-auth-particles,
+  .royal-auth-mist { animation: none !important; }
+}
