@@ -1,0 +1,25 @@
+<svg width="96" height="32" viewBox="0 0 96 32" shape-rendering="crispEdges" aria-hidden="true">
+  <!-- RoyalStory original pixel-art asset -->
+  <!-- Frame 1: a compact amber spark. -->
+  <rect x="14" y="13" width="4" height="6" fill="#a8641d"/>
+  <rect x="12" y="15" width="8" height="2" fill="#d99028"/>
+  <rect x="15" y="14" width="2" height="4" fill="#fff0a2"/>
+  <rect x="15" y="7" width="2" height="4" fill="#d99028"/>
+  <rect x="15" y="21" width="2" height="4" fill="#d99028"/>
+  <rect x="5" y="15" width="4" height="2" fill="#c67b22"/>
+  <rect x="23" y="15" width="4" height="2" fill="#c67b22"/>
+  <!-- Frame 2: the expanding eight-point starburst. -->
+  <polygon fill="#b96d1e" points="64,2 68,11 78,9 71,16 80,22 69,21 65,30 61,21 50,24 57,17 49,10 60,12"/>
+  <polygon fill="#e8a43b" points="64,7 67,13 73,12 69,16 74,20 67,19 64,26 61,19 55,21 59,17 54,12 61,13"/>
+  <rect x="62" y="14" width="4" height="4" fill="#fff2a8"/>
+  <rect x="47" y="5" width="2" height="2" fill="#d99028"/>
+  <rect x="79" y="26" width="2" height="2" fill="#d99028"/>
+  <!-- Frame 3: scattered gold fragments after contact. -->
+  <polygon fill="#c77b22" points="82,4 86,8 84,12 80,8"/>
+  <polygon fill="#e2a143" points="91,11 95,13 93,17 89,15"/>
+  <polygon fill="#d99028" points="76,17 80,19 78,23 74,21"/>
+  <polygon fill="#f3c76d" points="84,22 88,24 86,28 82,26"/>
+  <rect x="68" y="7" width="3" height="3" fill="#e8a43b"/>
+  <rect x="70" y="25" width="2" height="2" fill="#c77b22"/>
+  <rect x="93" y="4" width="2" height="3" fill="#fff0a2"/>
+</svg>

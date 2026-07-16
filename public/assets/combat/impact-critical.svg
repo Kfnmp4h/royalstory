@@ -1,0 +1,32 @@
+<svg width="192" height="48" viewBox="0 0 192 48" shape-rendering="crispEdges" aria-hidden="true">
+  <!-- RoyalStory original pixel-art asset -->
+  <!-- Frame 1: a tight white cross with red warning sparks. -->
+  <polygon fill="#a8323d" points="24,4 28,16 42,12 32,21 40,30 28,28 24,43 20,29 7,35 16,24 6,15 20,18"/>
+  <polygon fill="#f2bf4c" points="24,9 27,19 36,17 29,23 34,29 26,27 24,38 21,28 13,31 19,24 12,18 21,20"/>
+  <polygon fill="#fff9e9" points="24,14 27,21 32,20 28,24 32,28 26,27 24,34 21,27 16,29 20,24 16,20 22,21"/>
+  <rect x="3" y="23" width="3" height="3" fill="#c94a4b"/>
+  <rect x="42" y="8" width="3" height="3" fill="#f2bf4c"/>
+  <!-- Frame 2: a full gold and white crossburst. -->
+  <polygon fill="#b53741" points="72,1 77,15 94,8 82,21 95,28 78,29 72,46 67,30 50,37 62,24 49,15 66,18"/>
+  <polygon fill="#eab546" points="72,5 76,18 89,12 80,22 90,27 76,27 72,42 68,28 55,33 64,24 54,16 68,20"/>
+  <polygon fill="#fff9e9" points="72,10 75,20 84,16 78,23 85,27 75,26 72,37 69,27 60,31 66,24 59,18 69,21"/>
+  <rect x="70" y="21" width="4" height="5" fill="#ffffff"/>
+  <rect x="48" y="3" width="3" height="3" fill="#eab546"/>
+  <rect x="92" y="38" width="3" height="3" fill="#c94a4b"/>
+  <!-- Frame 3: bright crossing rays at maximum impact. -->
+  <polygon fill="#bd3c43" points="120,0 126,15 143,7 131,21 145,25 128,30 120,47 114,31 97,40 109,25 96,17 113,18"/>
+  <polygon fill="#f0bd4d" points="120,4 125,18 139,12 129,22 140,25 125,28 120,43 115,29 101,35 111,24 101,18 115,21"/>
+  <polygon fill="#fffdf4" points="120,8 124,20 134,16 127,23 136,25 123,26 120,39 117,27 106,32 114,24 105,19 117,22"/>
+  <rect x="118" y="21" width="5" height="5" fill="#ffffff"/>
+  <rect x="98" y="4" width="3" height="3" fill="#fff9e9"/>
+  <rect x="141" y="40" width="3" height="3" fill="#eab546"/>
+  <!-- Frame 4: red, gold, and ivory embers travel outward. -->
+  <polygon fill="#bd3c43" points="161,5 166,10 163,15 157,10"/>
+  <polygon fill="#fff9e9" points="175,3 180,8 177,13 172,8"/>
+  <polygon fill="#f0bd4d" points="184,15 190,18 186,24 181,21"/>
+  <polygon fill="#c94a4b" points="170,20 175,25 171,30 166,25"/>
+  <polygon fill="#fffdf4" points="151,27 156,30 153,35 148,32"/>
+  <polygon fill="#eab546" points="181,34 186,38 182,43 177,39"/>
+  <rect x="144" y="14" width="3" height="4" fill="#bd3c43"/>
+  <rect x="158" y="40" width="3" height="3" fill="#f0bd4d"/>
+</svg>
