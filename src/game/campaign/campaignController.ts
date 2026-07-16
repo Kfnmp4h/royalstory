@@ -2,7 +2,7 @@ import { createCombatEngine } from '../combatEngine';
 import { getEncounterXp } from '../balance';
 import { createEquipmentController } from '../equipment/equipmentController';
 import { createProgressionController } from '../progression/progressionController';
-import type { CombatEngine, CombatEvent } from '../types';
+import type { CombatEngine, CombatEvent, CombatSnapshot } from '../types';
 import { CHAPTERS, getChapter } from './campaignDefinitions';
 import type {
   CampaignController,
@@ -15,25 +15,11 @@ import type {
 
 const activeModes: ReadonlySet<CampaignMode> = new Set(['farming', 'breakthrough', 'boss']);
 
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-  typeof value === 'object' && value !== null
-);
-
-const isNonEmptyString = (value: unknown): value is string => (
-  typeof value === 'string' && value.trim().length > 0
-);
-
-const isPositiveNumber = (value: unknown): value is number => (
-  typeof value === 'number' && Number.isFinite(value) && value > 0
-);
-
-const isNonNegativeNumber = (value: unknown): value is number => (
-  typeof value === 'number' && Number.isFinite(value) && value >= 0
-);
-
-const isColor = (value: unknown): value is number => (
-  typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 0xffffff
-);
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
+const isNonEmptyString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
+const isPositiveNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0;
+const isNonNegativeNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value >= 0;
+const isColor = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 0xffffff;
 
 const hasCombatant = (value: unknown, id: 'player' | 'enemy'): boolean => (
   isRecord(value)
@@ -68,7 +54,6 @@ const hasEncounter = (value: unknown, kind: EncounterDefinition['kind']): boolea
 
 const hasOrderedEncounters = (chapters: readonly ChapterDefinition[]): boolean => {
   if (!Array.isArray(chapters) || chapters.length !== 36) return false;
-
   for (let index = 0; index < 36; index += 1) {
     const chapter = chapters[index];
     if (
@@ -81,7 +66,6 @@ const hasOrderedEncounters = (chapters: readonly ChapterDefinition[]): boolean =
       || !hasEncounter(chapter.boss, 'boss')
     ) return false;
   }
-
   return true;
 };
 
@@ -89,9 +73,7 @@ export const createCampaignController = (
   chapters: readonly ChapterDefinition[] = CHAPTERS,
   options: CampaignControllerOptions = {},
 ): CampaignController => {
-  if (!hasOrderedEncounters(chapters)) {
-    throw new Error('Campaign must contain 36 ordered chapters');
-  }
+  if (!hasOrderedEncounters(chapters)) throw new Error('Campaign must contain 36 ordered chapters');
 
   const initial = options.initialState;
   let chapter = initial ? chapters[initial.chapterNumber - 1]! : chapters === CHAPTERS ? getChapter(1) : chapters[0]!;
@@ -106,7 +88,11 @@ export const createCampaignController = (
     initialState: initial?.equipment,
   });
 
-  const startEncounter = (definition: EncounterDefinition, nextMode: CampaignMode) => {
+  const startEncounter = (
+    definition: EncounterDefinition,
+    nextMode: CampaignMode,
+    restoredCombat: CombatSnapshot | null = null,
+  ) => {
     const stats = progression.getSnapshot().stats;
     const profile = equipment.getSnapshot(stats).effectiveStats;
     encounter = definition;
@@ -121,8 +107,9 @@ export const createCampaignController = (
     }, {
       random: options.combatRandom ?? Math.random,
       monsterDamageKind: definition.kind === 'boss' ? 'boss' : 'normal',
+      initialState: restoredCombat ?? undefined,
     });
-    engine.applyPlayerStats(profile);
+    if (restoredCombat === null) engine.applyPlayerStats(profile);
     mode = nextMode;
   };
 
@@ -132,29 +119,32 @@ export const createCampaignController = (
     encounter = null;
     engine = null;
   } else if (mode === 'breakthrough') {
-    startEncounter(chapter.breakthrough, 'breakthrough');
+    startEncounter(chapter.breakthrough, 'breakthrough', initial?.combat ?? null);
   } else if (mode === 'boss') {
-    startEncounter(chapter.boss, 'boss');
+    startEncounter(chapter.boss, 'boss', initial?.combat ?? null);
   } else {
-    startEncounter(chapter.farming, 'farming');
+    startEncounter(chapter.farming, 'farming', initial?.combat ?? null);
   }
 
   const advance = (elapsedMs: number): CombatEvent[] => {
     if (!activeModes.has(mode) || engine === null) return [];
-
     const events = engine.advance(elapsedMs);
-    const death = events.find((event) => event.type === 'death');
-    if (death?.actor === 'enemy' && encounter !== null) {
+    const deaths = events.filter((event): event is Extract<CombatEvent, { type: 'death' }> => event.type === 'death');
+
+    for (const death of deaths) {
+      if (death.actor !== 'enemy' || encounter === null) continue;
       progression.awardXp(getEncounterXp(chapter.number, encounter.kind));
       const progressionSnapshot = progression.getSnapshot();
       equipment.rollDrop(encounter.kind, progressionSnapshot.level);
       engine.applyPlayerStats(equipment.getSnapshot(progressionSnapshot.stats).effectiveStats);
+      if (mode !== 'farming') break;
     }
+
+    const death = deaths[0];
     if (death === undefined || mode === 'farming') return events;
 
     if (mode === 'breakthrough') {
-      if (death.actor === 'enemy') bossUnlocked = true;
-      else bossUnlocked = false;
+      bossUnlocked = death.actor === 'enemy';
       returnToFarming();
       return events;
     }
@@ -173,7 +163,7 @@ export const createCampaignController = (
     }
 
     unlockedChapter = chapter.number + 1;
-    chapter = chapters[unlockedChapter - 1];
+    chapter = chapters[unlockedChapter - 1]!;
     bossUnlocked = false;
     returnToFarming();
     return events;
@@ -206,7 +196,7 @@ export const createCampaignController = (
     bossUnlocked,
     progression: progression.getPersistentState(),
     equipment: equipment.getPersistentState(),
-    combat: null,
+    combat: engine?.getPersistentState() ?? null,
   });
 
   return {
