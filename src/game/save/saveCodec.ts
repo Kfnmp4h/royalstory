@@ -17,26 +17,16 @@ import type {
   PlayerSaveState,
 } from './saveTypes';
 
-const CAMPAIGN_MODES: ReadonlySet<CampaignMode> = new Set([
-  'farming',
-  'breakthrough',
-  'boss',
-  'campaign-complete',
-]);
+const CAMPAIGN_MODES: ReadonlySet<CampaignMode> = new Set(['farming', 'breakthrough', 'boss', 'campaign-complete']);
 const COMBAT_PHASES: ReadonlySet<CombatPhase> = new Set(['fighting', 'enemy-defeated', 'player-defeated']);
-const ACTOR_IDS: ReadonlySet<ActorId> = new Set(['player', 'enemy']);
 const SLOT_SET = new Set<string>(EQUIPMENT_SLOTS);
 const RARITY_SET = new Set<string>(EQUIPMENT_RARITIES);
 const STAT_SET = new Set<string>(EQUIPMENT_STAT_KEYS);
 
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-  typeof value === 'object' && value !== null && !Array.isArray(value)
-);
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const parseInteger = (value: unknown, minimum: number, maximum: number, message: string): number => {
-  if (typeof value !== 'number' || !Number.isInteger(value) || value < minimum || value > maximum) {
-    throw new Error(message);
-  }
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < minimum || value > maximum) throw new Error(message);
   return value;
 };
 
@@ -76,9 +66,7 @@ const parseItem = (value: unknown): EquipmentItem => {
   if (!Array.isArray(value.substats) || value.substats.length > 4) throw new Error('Equipment substats must be an array with at most four entries');
   const seenStats = new Set<string>();
   const substats = value.substats.map((substat) => {
-    if (!isRecord(substat) || typeof substat.type !== 'string' || !STAT_SET.has(substat.type)) {
-      throw new Error('Equipment substat type is invalid');
-    }
+    if (!isRecord(substat) || typeof substat.type !== 'string' || !STAT_SET.has(substat.type)) throw new Error('Equipment substat type is invalid');
     if (seenStats.has(substat.type)) throw new Error('Equipment substats cannot contain duplicate types');
     seenStats.add(substat.type);
     return Object.freeze({
@@ -102,9 +90,7 @@ const parseEquipment = (value: unknown): PersistentEquipmentState => {
   if (!isRecord(value)) throw new Error('Equipment must be an object');
   if (!Array.isArray(value.inventory)) throw new Error('Saved equipment inventory must be an array');
   if (!isRecord(value.equipped)) throw new Error('Equipped items must be an object');
-  const extraSlots = Object.keys(value.equipped).filter((slot) => !SLOT_SET.has(slot));
-  if (extraSlots.length > 0) throw new Error('Equipped items contain an invalid slot');
-
+  if (Object.keys(value.equipped).some((slot) => !SLOT_SET.has(slot))) throw new Error('Equipped items contain an invalid slot');
   const inventory = value.inventory.map(parseItem);
   const equipped = {} as Record<EquipmentSlot, EquipmentItem | null>;
   for (const slot of EQUIPMENT_SLOTS) {
@@ -116,31 +102,24 @@ const parseEquipment = (value: unknown): PersistentEquipmentState => {
       equipped[slot] = item;
     }
   }
-
   const allItems = [...inventory, ...Object.values(equipped).filter((item): item is EquipmentItem => item !== null)];
   const ids = new Set<string>();
   for (const item of allItems) {
     if (ids.has(item.id)) throw new Error('Equipment state contains duplicate item IDs');
     ids.add(item.id);
   }
-
-  const latestDropId = value.latestDropId === null
-    ? null
-    : parseString(value.latestDropId, 'Latest drop ID must be null or a non-empty string');
+  const latestDropId = value.latestDropId === null ? null : parseString(value.latestDropId, 'Latest drop ID must be null or a non-empty string');
   if (latestDropId !== null && !ids.has(latestDropId)) throw new Error('Latest drop ID must reference an owned item');
-  const nextItemNumber = parseInteger(value.nextItemNumber, 1, Number.MAX_SAFE_INTEGER, 'Next item number must be a positive integer');
-
   return Object.freeze({
     inventory: Object.freeze(inventory),
     equipped: Object.freeze(equipped) as EquippedItems,
     latestDropId,
-    nextItemNumber,
+    nextItemNumber: parseInteger(value.nextItemNumber, 1, Number.MAX_SAFE_INTEGER, 'Next item number must be a positive integer'),
   });
 };
 
 const parseCombatant = (value: unknown, expectedId: ActorId, player: boolean) => {
-  if (!isRecord(value)) throw new Error('Combatant must be an object');
-  if (value.id !== expectedId || !ACTOR_IDS.has(expectedId)) throw new Error('Combatant ID is invalid');
+  if (!isRecord(value) || value.id !== expectedId) throw new Error('Combatant ID is invalid');
   const maxHp = parseFinite(value.maxHp, 1, 'Combatant max HP must be positive');
   const hp = parseFinite(value.hp, 0, 'Combatant HP must be non-negative');
   if (hp > maxHp) throw new Error('Combatant HP cannot exceed max HP');
@@ -175,7 +154,7 @@ const parseCombat = (value: unknown): CombatSnapshot | null => {
   if (!isRecord(value)) throw new Error('Combat state must be an object or null');
   if (typeof value.phase !== 'string' || !COMBAT_PHASES.has(value.phase as CombatPhase)) throw new Error('Combat phase is invalid');
   if (typeof value.paused !== 'boolean') throw new Error('Combat paused state must be a boolean');
-  const combat = {
+  return Object.freeze({
     phase: value.phase as CombatPhase,
     paused: value.paused,
     activeRuntimeMs: parseFinite(value.activeRuntimeMs, 0, 'Combat runtime must be non-negative'),
@@ -184,8 +163,7 @@ const parseCombat = (value: unknown): CombatSnapshot | null => {
     recoveryRemainingMs: parseFinite(value.recoveryRemainingMs, 0, 'Recovery time must be non-negative'),
     player: parseCombatant(value.player, 'player', true),
     enemy: parseCombatant(value.enemy, 'enemy', false),
-  } as CombatSnapshot;
-  return Object.freeze(combat);
+  }) as CombatSnapshot;
 };
 
 const parseCampaign = (value: unknown): CampaignPersistentState => {
@@ -198,7 +176,7 @@ const parseCampaign = (value: unknown): CampaignPersistentState => {
   const mode = value.mode as CampaignMode;
   const combat = parseCombat(value.combat);
   if (mode === 'campaign-complete' && combat !== null) throw new Error('Completed campaigns cannot contain active combat');
-  if (mode !== 'campaign-complete' && combat === null) throw new Error('Active campaigns must contain combat state');
+  if ((mode === 'breakthrough' || mode === 'boss') && combat === null) throw new Error('Active challenge modes must contain combat state');
   if (mode === 'boss' && !value.bossUnlocked) throw new Error('Boss mode requires an unlocked boss');
   return Object.freeze({
     chapterNumber,
@@ -222,12 +200,7 @@ export function createInitialPlayerSaveState(): PlayerSaveState {
       mode: 'farming',
       bossUnlocked: false,
       progression: Object.freeze({ level: 1, xp: 0, totalXp: 0 }),
-      equipment: Object.freeze({
-        inventory: Object.freeze([]),
-        equipped: Object.freeze(equipped),
-        latestDropId: null,
-        nextItemNumber: 1,
-      }),
+      equipment: Object.freeze({ inventory: Object.freeze([]), equipped: Object.freeze(equipped), latestDropId: null, nextItemNumber: 1 }),
       combat: null,
     }),
   });
@@ -236,6 +209,9 @@ export function createInitialPlayerSaveState(): PlayerSaveState {
 export function parsePlayerSaveState(value: unknown): PlayerSaveState {
   if (!isRecord(value)) throw new Error('Player save state must be an object');
   if (value.schemaVersion !== 1) throw new Error('Unsupported player save schema version');
-  const gold = parseInteger(value.gold, 0, Number.MAX_SAFE_INTEGER, 'Gold must be a non-negative integer');
-  return Object.freeze({ schemaVersion: 1, gold, campaign: parseCampaign(value.campaign) });
+  return Object.freeze({
+    schemaVersion: 1,
+    gold: parseInteger(value.gold, 0, Number.MAX_SAFE_INTEGER, 'Gold must be a non-negative integer'),
+    campaign: parseCampaign(value.campaign),
+  });
 }
