@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { playerApi } from './game/api/playerApi';
 import { createBattleGame } from './game/phaser/battleGame';
 import type { BattleController, BattleStatus } from './game/phaser/battleGame';
 import type { CampaignMode } from './game/campaign/campaignTypes';
@@ -9,6 +10,7 @@ import {
   type EquipmentRarity,
   type EquipmentStatKey,
 } from './game/equipment/equipmentTypes';
+import type { PlayerApiRecord, PlayerApiResponse, PlayerCommand } from './game/save/saveTypes';
 import { subscribeToVisibility } from './game/visibilityController';
 
 const rarityClass: Record<EquipmentRarity, string> = {
@@ -42,6 +44,12 @@ const percentageStats = new Set<EquipmentStatKey>([
   'normalDamage',
 ]);
 
+interface AppProps {
+  readonly record: PlayerApiRecord;
+  readonly onRecordChange: (record: PlayerApiRecord) => void;
+  readonly initialNotice?: string | null;
+}
+
 function EquipmentSummary({ item }: { item: EquipmentItem }) {
   return (
     <>
@@ -74,9 +82,14 @@ function formatRuntime(runtimeMs: number): string {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-export function App() {
+const hasRecord = (response: PlayerApiResponse): response is Extract<PlayerApiResponse, { record: PlayerApiRecord }> => (
+  response.kind === 'loaded' || response.kind === 'saved' || response.kind === 'stale'
+);
+
+export function App({ record, onRecordChange, initialNotice = null }: AppProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<BattleController | null>(null);
+  const commandInFlightRef = useRef(false);
   const previousLevelRef = useRef<number | null>(null);
   const previousDropIdRef = useRef<string | null>(null);
   const [status, setStatus] = useState<BattleStatus | null>(null);
@@ -85,14 +98,21 @@ export function App() {
   const [levelUpMessage, setLevelUpMessage] = useState<string | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [dropMessage, setDropMessage] = useState<string | null>(null);
+  const [serverNotice, setServerNotice] = useState<string | null>(initialNotice);
+  const [serverBusy, setServerBusy] = useState(false);
+
+  useEffect(() => setServerNotice(initialNotice), [initialNotice]);
 
   useEffect(() => {
     const parent = hostRef.current;
     if (!parent) return;
     let active = true;
+    setStatus(null);
+    setError(null);
 
     const controller = createBattleGame({
       parent,
+      initialState: record.state.campaign,
       onStatus: (nextStatus) => {
         if (active) setStatus(nextStatus);
       },
@@ -106,13 +126,44 @@ export function App() {
       active = false;
       controller.destroy();
       if (controllerRef.current === controller) controllerRef.current = null;
+      parent.replaceChildren();
     };
-  }, []);
+  }, [record.saveVersion, record.state.campaign]);
 
   useEffect(() => subscribeToVisibility(document, (hidden) => {
     controllerRef.current?.setPaused(hidden);
     setVisibilityState((current) => hidden ? 'paused' : current === 'paused' ? 'running' : null);
   }), []);
+
+  const issueCommand = useCallback(async (command: PlayerCommand) => {
+    if (commandInFlightRef.current) return;
+    commandInFlightRef.current = true;
+    setServerBusy(true);
+    const response = await playerApi.command(command);
+    if (hasRecord(response)) {
+      onRecordChange(response.record);
+      if (response.kind === 'stale') {
+        setServerNotice('A newer server save replaced this tab’s local view.');
+      } else if ('offline' in response && response.offline && response.offline.kills > 0) {
+        setServerNotice(
+          `Offline rewards: ${response.offline.gold} gold, ${response.offline.xp} XP, ${response.offline.drops.length} drops.`,
+        );
+      }
+    } else if (response.kind === 'unauthorized') {
+      setError(new Error('Your session expired. Sign in again.'));
+    } else {
+      setError(new Error(response.message));
+    }
+    setServerBusy(false);
+    commandInFlightRef.current = false;
+  }, [onRecordChange]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      void issueCommand({ type: 'sync', expectedVersion: record.saveVersion });
+    }, 15_000);
+    return () => window.clearInterval(timer);
+  }, [issueCommand, record.saveVersion]);
 
   useEffect(() => {
     const level = status?.snapshot.progression.level;
@@ -137,11 +188,13 @@ export function App() {
 
   const statusLabel = error
     ? 'Error'
-    : visibilityState === 'running' || (!visibilityState && status?.state === 'running')
-      ? 'Running'
-      : visibilityState === 'paused' || status?.state === 'paused'
-        ? 'Paused'
-        : 'Starting';
+    : serverBusy
+      ? 'Saving'
+      : visibilityState === 'running' || (!visibilityState && status?.state === 'running')
+        ? 'Running'
+        : visibilityState === 'paused' || status?.state === 'paused'
+          ? 'Paused'
+          : 'Starting';
   const snapshot = status?.snapshot;
   const combat = snapshot?.combat;
   const progression = snapshot?.progression;
@@ -154,7 +207,7 @@ export function App() {
   const campaignMessage = snapshot
     ? snapshot.mode === 'farming'
       ? snapshot.bossUnlocked
-        ? { status: 'Farming â€” boss unlocked', instruction: 'Keep farming or challenge the chapter boss.' }
+        ? { status: 'Farming — boss unlocked', instruction: 'Keep farming or challenge the chapter boss.' }
         : { status: 'Farming', instruction: 'Defeat enemies to prepare for a breakthrough.' }
       : campaignMessages[snapshot.mode]
     : null;
@@ -162,8 +215,10 @@ export function App() {
   return (
     <main className="app-shell">
       <header className="hero-header">
-        <p className="eyebrow">Milestone 5 · Equipment Frontier</p>
+        <p className="eyebrow">Milestone 6 · Online Kingdom</p>
         <h1>RoyalStory</h1>
+        <p>Gold: {record.state.gold}</p>
+        {serverNotice ? <p role="status">{serverNotice}</p> : null}
       </header>
       <section className="campaign-panel" aria-label="Campaign progress">
         {snapshot && campaignMessage ? (
@@ -174,11 +229,19 @@ export function App() {
             <p className="campaign-instruction">{campaignMessage.instruction}</p>
             {snapshot.mode === 'farming' ? (
               snapshot.bossUnlocked ? (
-                <button type="button" onClick={() => controllerRef.current?.startBoss()}>
+                <button
+                  type="button"
+                  disabled={serverBusy}
+                  onClick={() => void issueCommand({ type: 'startBoss', expectedVersion: record.saveVersion })}
+                >
                   Challenge boss
                 </button>
               ) : (
-                <button type="button" onClick={() => controllerRef.current?.startBreakthrough()}>
+                <button
+                  type="button"
+                  disabled={serverBusy}
+                  onClick={() => void issueCommand({ type: 'startBreakthrough', expectedVersion: record.saveVersion })}
+                >
                   Start breakthrough
                 </button>
               )
@@ -256,7 +319,8 @@ export function App() {
             <button
               className="primary-action equip-best"
               type="button"
-              onClick={() => controllerRef.current?.equipBest()}
+              disabled={serverBusy}
+              onClick={() => void issueCommand({ type: 'equipBest', expectedVersion: record.saveVersion })}
             >
               Equip Best
             </button>
@@ -313,7 +377,12 @@ export function App() {
                 <button
                   className="primary-action"
                   type="button"
-                  onClick={() => controllerRef.current?.equip(comparison.selected.id)}
+                  disabled={serverBusy}
+                  onClick={() => void issueCommand({
+                    type: 'equip',
+                    expectedVersion: record.saveVersion,
+                    itemId: comparison.selected.id,
+                  })}
                 >
                   Equip selected
                 </button>
