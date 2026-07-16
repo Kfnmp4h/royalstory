@@ -9,6 +9,7 @@ import './ui/royal-components.css';
 import './auth/royal-auth.css';
 import './auth/royal-auth-target.css';
 import './auth/royal-auth-illustrated.css';
+import './live-login.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode><AuthRoot /></StrictMode>,
