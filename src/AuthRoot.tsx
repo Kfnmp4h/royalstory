@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { App } from './App';
+import { ResetProgressDialog } from './components/ResetProgressDialog';
 import { authApi } from './game/api/authApi';
 import { playerApi } from './game/api/playerApi';
 import type { PlayerApiRecord } from './game/save/saveTypes';
 
 type AuthMode = 'sign-in' | 'sign-up' | 'forgot';
+
+const hasRecord = (value: Awaited<ReturnType<typeof playerApi.reset>>): value is Extract<typeof value, { record: PlayerApiRecord }> => (
+  value.kind === 'loaded' || value.kind === 'saved' || value.kind === 'stale'
+);
 
 export function AuthRoot() {
   const [record, setRecord] = useState<PlayerApiRecord | null>(null);
@@ -16,6 +21,7 @@ export function AuthRoot() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [gameNotice, setGameNotice] = useState<string | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
 
   const loadSession = useCallback(async () => {
     setChecking(true);
@@ -72,6 +78,27 @@ export function AuthRoot() {
     await authApi.signOut();
     setRecord(null);
     setGameNotice(null);
+    setResetOpen(false);
+    setBusy(false);
+  };
+
+  const resetProgress = async () => {
+    if (!record) return;
+    setBusy(true);
+    const response = await playerApi.reset(record.saveVersion, 'RESET', true);
+    if (hasRecord(response)) {
+      setRecord(response.record);
+      setGameNotice(response.kind === 'stale'
+        ? 'Progress changed elsewhere. The latest server save was loaded instead of resetting.'
+        : 'Progress reset complete. A new level 1 save is active.');
+      setResetOpen(false);
+    } else if (response.kind === 'unauthorized') {
+      setRecord(null);
+      setMessage('Your session expired. Sign in again.');
+      setResetOpen(false);
+    } else {
+      setGameNotice(response.message);
+    }
     setBusy(false);
   };
 
@@ -103,8 +130,21 @@ export function AuthRoot() {
 
   return (
     <>
-      <div className="account-bar"><span>Online save active</span><button type="button" disabled={busy} onClick={signOut}>Sign out</button></div>
+      <div className="account-bar">
+        <span>Online save active</span>
+        <div className="account-actions">
+          <button type="button" disabled={busy} onClick={() => setResetOpen(true)}>Reset progress</button>
+          <button type="button" disabled={busy} onClick={signOut}>Sign out</button>
+        </div>
+      </div>
       <App record={record} onRecordChange={setRecord} initialNotice={gameNotice} />
+      {resetOpen ? (
+        <ResetProgressDialog
+          busy={busy}
+          onCancel={() => setResetOpen(false)}
+          onConfirm={resetProgress}
+        />
+      ) : null}
     </>
   );
 }
