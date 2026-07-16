@@ -6,20 +6,27 @@ interface RoyalAuthSceneProps {
   readonly loadingText?: string;
 }
 
+function AnimatedBrazier({ side }: { readonly side: 'left' | 'right' }) {
+  return (
+    <div className={`royal-auth-brazier royal-auth-brazier-${side}`} aria-hidden="true">
+      <span className="royal-auth-fire royal-auth-fire-back" />
+      <span className="royal-auth-fire royal-auth-fire-mid" />
+      <span className="royal-auth-fire royal-auth-fire-front" />
+      <span className="royal-auth-fire-glow" />
+      <span className="royal-auth-smoke" />
+    </div>
+  );
+}
+
 export function RoyalAuthScene({ children, loadingText }: RoyalAuthSceneProps) {
   return (
-    <main className="royal-auth-scene">
-      <div className="royal-auth-backdrop" style={{ backgroundImage: "linear-gradient(rgb(15 6 22 / 18%), rgb(5 2 9 / 48%)), url('/art/royalstory/login-throne-room.svg')", backgroundSize: 'cover', backgroundPosition: 'center' }} aria-hidden="true" />
-      <div className="royal-auth-architecture" aria-hidden="true" />
-      <div className="royal-auth-depth" aria-hidden="true"><span className="royal-auth-window royal-auth-window-left" /><span className="royal-auth-throne" /><span className="royal-auth-window royal-auth-window-right" /></div>
-      <div className="royal-auth-carpet" aria-hidden="true" />
-      <div className="royal-auth-banner royal-auth-banner-left" aria-hidden="true"><span>♛</span></div>
-      <div className="royal-auth-banner royal-auth-banner-right" aria-hidden="true"><span>♛</span></div>
-      <div className="royal-auth-brazier royal-auth-brazier-left" aria-hidden="true"><span className="royal-auth-fire royal-auth-fire-back" /><span className="royal-auth-fire royal-auth-fire-mid" /><span className="royal-auth-fire royal-auth-fire-front" /><span className="royal-auth-fire-glow" /><span className="royal-auth-smoke" /></div>
-      <div className="royal-auth-brazier royal-auth-brazier-right" aria-hidden="true"><span className="royal-auth-fire royal-auth-fire-back" /><span className="royal-auth-fire royal-auth-fire-mid" /><span className="royal-auth-fire royal-auth-fire-front" /><span className="royal-auth-fire-glow" /><span className="royal-auth-smoke" /></div>
+    <main className="royal-auth-scene royal-auth-scene--illustrated">
+      <div className="royal-auth-backdrop royal-auth-backdrop--illustrated" aria-hidden="true" />
+      <AnimatedBrazier side="left" />
+      <AnimatedBrazier side="right" />
       <div className="royal-auth-particles" aria-hidden="true" />
       <div className="royal-auth-mist" aria-hidden="true" />
-      <div className="royal-auth-content">
+      <div className="royal-auth-content royal-auth-content--prototype">
         <RoyalBrandMark variant="stacked" />
         {loadingText ? <p className="royal-auth-loading" role="status">{loadingText}</p> : children}
       </div>
