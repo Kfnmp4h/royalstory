@@ -34,6 +34,20 @@ const scriptedRandom = (...values: number[]) => {
   };
 };
 
+const trackedScriptedRandom = (...values: number[]) => {
+  const draws: number[] = [];
+  let index = 0;
+  return {
+    draws,
+    random: () => {
+      if (index >= values.length) throw new Error('Scripted random exhausted');
+      const value = values[index++]!;
+      draws.push(value);
+      return value;
+    },
+  };
+};
+
 const makeProfile = (overrides: Partial<PlayerCombatProfile> = {}): PlayerCombatProfile => ({
   attack: 18,
   defense: 2,
@@ -156,6 +170,28 @@ describe('createCombatEngine', () => {
       { type: 'health_changed', actorId: 'player', targetId: 'enemy', resultingHealth: 0, timestampMs: 100 },
       { type: 'enemy_defeated', actorId: 'player', targetId: 'enemy', damage: 90, critical: false, resultingHealth: 0, timestampMs: 100 },
     ]);
+  });
+
+  it('keeps legacy and presentation advances equivalent without extra random draws', () => {
+    const balance = makeBalance({
+      player: { attackIntervalMs: 100 },
+      enemy: { attackIntervalMs: 100 },
+    });
+    const randomSequence = [0, 0, 0, 0, 0.5, 0];
+    const legacyRandom = trackedScriptedRandom(...randomSequence);
+    const presentationRandom = trackedScriptedRandom(...randomSequence);
+    const legacy = createCombatEngine(balance, { random: legacyRandom.random });
+    const presentation = createCombatEngine(balance, { random: presentationRandom.random });
+
+    const legacyEvents = legacy.advance(200);
+    const presentationResult = presentation.advanceWithPresentation(200);
+
+    expect(presentationResult.events).toEqual(legacyEvents);
+    expect(presentationResult.presentationEvents).not.toEqual([]);
+    expect(presentation.getSnapshot()).toEqual(legacy.getSnapshot());
+    expect(presentationRandom.draws).toHaveLength(legacyRandom.draws.length);
+    expect(presentationRandom.draws).toEqual(legacyRandom.draws);
+    expect(presentationRandom.draws).toEqual(randomSequence);
   });
 
   it('lets Mossling attack on its independent interval', () => {

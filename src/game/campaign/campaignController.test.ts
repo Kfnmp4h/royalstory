@@ -274,6 +274,39 @@ describe('createCampaignController', () => {
     expect(JSON.stringify(campaign.getPersistentState!())).not.toContain('presentationEvents');
   });
 
+  it('replaces a populated presentation batch with an empty advance result', () => {
+    const chapters = withEncounterBalance('farming', {
+      ...CHAPTERS[0].farming.balance,
+      player: { ...CHAPTERS[0].farming.balance.player, attackIntervalMs: 100 },
+      enemy: { ...CHAPTERS[0].farming.balance.enemy, attackIntervalMs: 1_000 },
+    });
+    const campaign = createCampaignController(chapters);
+
+    expect(campaign.advance(100)).toEqual([
+      { type: 'attack', attacker: 'player', target: 'enemy' },
+      { type: 'damage', target: 'enemy', amount: 18, hp: 57 },
+    ]);
+    expect(campaign.advance(0)).toEqual([]);
+    expect(campaign.consumePresentationEvents!()).toEqual([]);
+  });
+
+  it('keeps a lethal breakthrough batch through the encounter transition until it is drained', () => {
+    const chapters = withEncounterBalance('breakthrough', {
+      ...CHAPTERS[0].breakthrough.balance,
+      player: { ...CHAPTERS[0].breakthrough.balance.player, attackIntervalMs: 100 },
+      enemy: { ...CHAPTERS[0].breakthrough.balance.enemy, maxHp: 1, attackIntervalMs: 1_000 },
+    });
+    const campaign = createCampaignController(chapters);
+    campaign.startBreakthrough();
+
+    expect(campaign.advance(100)).toContainEqual({ type: 'death', actor: 'enemy' });
+    expect(campaign.getSnapshot()).toMatchObject({ mode: 'farming', bossUnlocked: true, encounter: { kind: 'farming' } });
+    expect(campaign.consumePresentationEvents!()).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: 'enemy_defeated', actorId: 'player', targetId: 'enemy' }),
+    ]));
+    expect(campaign.consumePresentationEvents!()).toEqual([]);
+  });
+
   it('clears stale presentation batches when pausing or resuming', () => {
     const chapters = withEncounterBalance('farming', {
       ...CHAPTERS[0].farming.balance,
