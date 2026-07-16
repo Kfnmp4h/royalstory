@@ -1,0 +1,163 @@
+.royal-auth-scene--illustrated {
+  place-items: stretch;
+  padding: 0;
+  background: #09050d;
+}
+
+.royal-auth-backdrop--illustrated {
+  inset: -2%;
+  z-index: -20;
+  background-image:
+    linear-gradient(180deg, rgb(8 4 13 / 4%), rgb(8 4 13 / 16%) 68%, rgb(8 4 13 / 36%)),
+    url('/art/royalstory/login-throne-room.webp');
+  background-position: center center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  transform: scale(1.035);
+  animation: royal-illustration-drift 18s ease-in-out infinite alternate;
+}
+
+.royal-auth-backdrop--illustrated::before {
+  background: radial-gradient(circle at 50% 48%, transparent 0 42%, rgb(5 2 9 / 24%) 78%, rgb(5 2 9 / 62%) 100%);
+  opacity: 1;
+}
+
+.royal-auth-content--prototype {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  width: min(100%, 760px);
+  min-height: 100dvh;
+  margin-inline: auto;
+  padding: clamp(28px, 4vh, 58px) 20px clamp(18px, 3vh, 36px);
+  align-items: center;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.royal-auth-content--prototype > * {
+  pointer-events: auto;
+}
+
+.royal-auth-content--prototype .royal-brand {
+  width: min(76vw, 680px);
+  margin-top: 0;
+  filter: drop-shadow(0 16px 22px rgb(0 0 0 / 55%));
+}
+
+.royal-auth-content--prototype .royal-auth-card {
+  width: min(92vw, 500px);
+  margin-top: auto;
+  margin-bottom: clamp(18px, 5vh, 58px);
+  background:
+    linear-gradient(rgb(255 249 233 / 94%), rgb(234 221 191 / 94%)),
+    radial-gradient(circle at 50% 0%, rgb(255 255 255 / 75%), transparent 48%);
+  border-color: var(--royal-color-gold-500);
+  box-shadow:
+    0 26px 70px rgb(9 4 13 / 65%),
+    0 0 0 2px rgb(80 42 14 / 75%),
+    inset 0 0 0 2px rgb(255 247 214 / 80%);
+  backdrop-filter: blur(3px);
+}
+
+.royal-auth-content--prototype .royal-auth-kicker {
+  display: none;
+}
+
+.royal-auth-content--prototype .royal-auth-heading {
+  margin-bottom: 6px;
+  color: var(--royal-color-purple-900);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  text-align: center;
+}
+
+.royal-auth-content--prototype .royal-button--primary {
+  color: var(--royal-color-ink-100);
+  background: linear-gradient(180deg, #8f2d94 0%, #5e176e 52%, #3d104c 100%);
+  border-color: var(--royal-color-gold-300);
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / 24%),
+    inset 0 -3px 0 rgb(42 8 49 / 46%),
+    0 8px 18px rgb(34 8 43 / 38%),
+    0 0 0 2px rgb(102 61 18 / 70%);
+  font-family: var(--royal-font-display);
+  font-size: 1.12rem;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.royal-auth-content--prototype .royal-input__control {
+  min-height: 48px;
+  background: rgb(238 220 190 / 82%);
+  border-color: rgb(150 111 67 / 52%);
+}
+
+.royal-auth-content--prototype .royal-auth-links {
+  margin-top: 8px;
+}
+
+.royal-auth-scene--illustrated .royal-auth-brazier {
+  bottom: -1vh;
+  width: clamp(132px, 18vw, 280px);
+  height: clamp(210px, 36vh, 400px);
+  opacity: .92;
+  mix-blend-mode: screen;
+}
+
+.royal-auth-scene--illustrated .royal-auth-brazier-left { left: -1.5vw; }
+.royal-auth-scene--illustrated .royal-auth-brazier-right { right: -1.5vw; }
+
+.royal-auth-scene--illustrated .royal-auth-brazier::before,
+.royal-auth-scene--illustrated .royal-auth-brazier-bowl {
+  opacity: 0;
+}
+
+.royal-auth-scene--illustrated .royal-auth-fire {
+  bottom: 24%;
+}
+
+.royal-auth-scene--illustrated .royal-auth-fire-glow {
+  opacity: .62;
+}
+
+.royal-auth-scene--illustrated .royal-auth-mist {
+  opacity: .48;
+}
+
+@keyframes royal-illustration-drift {
+  from { transform: scale(1.035) translate3d(0, 0, 0); }
+  to { transform: scale(1.055) translate3d(0, -0.6%, 0); }
+}
+
+@media (max-width: 760px) {
+  .royal-auth-backdrop--illustrated {
+    background-position: 50% center;
+  }
+
+  .royal-auth-content--prototype {
+    justify-content: flex-start;
+    padding-top: 24px;
+  }
+
+  .royal-auth-content--prototype .royal-brand {
+    width: min(88vw, 520px);
+  }
+
+  .royal-auth-content--prototype .royal-auth-card {
+    margin-top: auto;
+    margin-bottom: 14px;
+  }
+
+  .royal-auth-scene--illustrated .royal-auth-brazier {
+    opacity: .52;
+    transform: scale(.78);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .royal-auth-backdrop--illustrated {
+    animation: none;
+    transform: scale(1.035);
+  }
+}

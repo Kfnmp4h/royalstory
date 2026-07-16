@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { App } from './App';
+import { RoyalAuthForm } from './auth/RoyalAuthForm';
+import { RoyalAuthScene } from './auth/RoyalAuthScene';
+import type { AuthMode } from './auth/authTypes';
 import { OfflineReturnDialog } from './components/OfflineReturnDialog';
 import { ResetProgressDialog } from './components/ResetProgressDialog';
 import { authApi } from './game/api/authApi';
 import { playerApi } from './game/api/playerApi';
 import type { OfflineRewardSummary, PlayerApiRecord } from './game/save/saveTypes';
-
-type AuthMode = 'sign-in' | 'sign-up' | 'forgot';
 
 const hasRecord = (value: Awaited<ReturnType<typeof playerApi.reset>>): value is Extract<typeof value, { record: PlayerApiRecord }> => (
   value.kind === 'loaded' || value.kind === 'saved' || value.kind === 'stale'
@@ -53,7 +54,15 @@ export function AuthRoot() {
     if (!recoveringPassword) void loadSession();
   }, [loadSession, recoveringPassword]);
 
-  const submitRecovery = async (event: FormEvent) => {
+  const requestAnotherReset = () => {
+    window.history.replaceState({}, '', '/');
+    setRecoveringPassword(false);
+    setMode('forgot');
+    setPassword('');
+    setMessage(null);
+  };
+
+  const submitRecovery = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setBusy(true);
     setMessage(null);
@@ -72,7 +81,7 @@ export function AuthRoot() {
     setBusy(false);
   };
 
-  const submit = async (event: FormEvent) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setBusy(true);
     setMessage(null);
@@ -129,67 +138,48 @@ export function AuthRoot() {
     const recoveryStatus = new URLSearchParams(window.location.search).get('auth');
     const invalidRecovery = recoveryStatus === 'invalid-link' || recoveryStatus === 'recovery-failed';
     return (
-      <main className="auth-shell">
-        <section className="auth-panel" aria-label="Choose a new RoyalStory password">
-          <p className="eyebrow">Milestone 6 · Account recovery</p>
-          <h1>RoyalStory</h1>
-          <h2>Choose a new password</h2>
-          {invalidRecovery ? (
-            <>
-              <p role="alert">This reset link is invalid or expired.</p>
-              <button type="button" onClick={() => {
-                window.history.replaceState({}, '', '/');
-                setRecoveringPassword(false);
-                setMode('forgot');
-              }}>Request another reset link</button>
-            </>
-          ) : (
-            <form onSubmit={submitRecovery}>
-              <label>
-                New password
-                <input
-                  type="password"
-                  minLength={8}
-                  maxLength={128}
-                  required
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                />
-              </label>
-              <button className="primary-action" type="submit" disabled={busy}>
-                {busy ? 'Updating…' : 'Update password'}
-              </button>
-            </form>
-          )}
-          {message ? <p role="status">{message}</p> : null}
-        </section>
-      </main>
+      <RoyalAuthScene>
+        <RoyalAuthForm
+          mode="sign-in"
+          email={email}
+          password={password}
+          busy={busy}
+          message={message}
+          recovery
+          invalidRecovery={invalidRecovery}
+          onEmailChange={setEmail}
+          onPasswordChange={setPassword}
+          onSubmit={submitRecovery}
+          onModeChange={setMode}
+          onRequestAnotherReset={requestAnotherReset}
+        />
+      </RoyalAuthScene>
     );
   }
 
-  if (checking) return <main className="auth-shell"><p>Checking account session…</p></main>;
+  if (checking) return <RoyalAuthScene loadingText="Checking account session…" />;
 
   if (!record) {
     return (
-      <main className="auth-shell">
-        <section className="auth-panel" aria-label="RoyalStory account">
-          <p className="eyebrow">Milestone 6 · Online save</p>
-          <h1>RoyalStory</h1>
-          <h2>{mode === 'sign-in' ? 'Sign in' : mode === 'sign-up' ? 'Create account' : 'Reset password'}</h2>
-          <form onSubmit={submit}>
-            <label>Email<input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>
-            {mode !== 'forgot' ? (
-              <label>Password<input type="password" minLength={8} maxLength={128} required value={password} onChange={(event) => setPassword(event.target.value)} /></label>
-            ) : null}
-            <button className="primary-action" type="submit" disabled={busy}>{busy ? 'Please wait…' : mode === 'sign-in' ? 'Sign in' : mode === 'sign-up' ? 'Create account' : 'Send reset link'}</button>
-          </form>
-          {message ? <p role="status">{message}</p> : null}
-          <div className="auth-actions">
-            <button type="button" onClick={() => setMode(mode === 'sign-up' ? 'sign-in' : 'sign-up')}>{mode === 'sign-up' ? 'Already have an account?' : 'Create account'}</button>
-            <button type="button" onClick={() => setMode(mode === 'forgot' ? 'sign-in' : 'forgot')}>{mode === 'forgot' ? 'Back to sign in' : 'Forgot password?'}</button>
-          </div>
-        </section>
-      </main>
+      <RoyalAuthScene>
+        <RoyalAuthForm
+          mode={mode}
+          email={email}
+          password={password}
+          busy={busy}
+          message={message}
+          recovery={false}
+          invalidRecovery={false}
+          onEmailChange={setEmail}
+          onPasswordChange={setPassword}
+          onSubmit={submit}
+          onModeChange={(nextMode) => {
+            setMode(nextMode);
+            setMessage(null);
+          }}
+          onRequestAnotherReset={requestAnotherReset}
+        />
+      </RoyalAuthScene>
     );
   }
 

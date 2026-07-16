@@ -1,0 +1,228 @@
+.royal-auth-scene {
+  padding: 0;
+  place-items: stretch;
+  background: #08050d;
+}
+
+.royal-auth-backdrop {
+  inset: 0;
+  background-image:
+    linear-gradient(180deg, rgb(8 4 14 / 4%), rgb(8 4 14 / 18%)),
+    url('/art/royalstory/login-throne-room.svg') !important;
+  background-position: center top !important;
+  background-repeat: no-repeat;
+  background-size: cover !important;
+  transform: scale(1.015);
+  animation: royal-target-camera 14s ease-in-out infinite alternate;
+}
+
+.royal-auth-architecture,
+.royal-auth-depth,
+.royal-auth-carpet,
+.royal-auth-banner {
+  display: none;
+}
+
+.royal-auth-content {
+  width: min(100%, 760px);
+  min-height: 100dvh;
+  margin-inline: auto;
+  padding: clamp(28px, 5vh, 60px) 20px clamp(24px, 4vh, 48px);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  justify-items: center;
+  gap: 0;
+}
+
+.royal-brand {
+  align-self: start;
+  width: min(72vw, 720px);
+  margin-top: clamp(8px, 2vh, 24px);
+  filter: drop-shadow(0 10px 18px rgb(0 0 0 / 55%));
+  transform-origin: center;
+  animation: royal-target-logo-in 900ms 180ms cubic-bezier(.18,.8,.22,1) both;
+}
+
+.royal-auth-card {
+  align-self: end;
+  width: min(100%, 520px);
+  margin-bottom: clamp(12px, 3vh, 40px);
+  padding: 26px 30px 24px;
+  border-radius: 18px;
+  background:
+    linear-gradient(rgb(255 255 255 / 34%), rgb(255 255 255 / 5%)),
+    var(--royal-color-ivory-300);
+  box-shadow:
+    0 26px 70px rgb(0 0 0 / 62%),
+    inset 0 0 0 2px var(--royal-color-gold-300),
+    inset 0 0 0 7px rgb(169 120 37 / 34%);
+  animation: royal-target-card-in 700ms 550ms ease-out both;
+}
+
+.royal-auth-card::before {
+  content: '';
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  width: 70px;
+  height: 44px;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(circle at 50% 50%, #a743c0 0 22%, #4b245f 23% 38%, transparent 39%),
+    linear-gradient(135deg, transparent 28%, #f1d477 29% 40%, #a97825 41% 58%, transparent 59%);
+  filter: drop-shadow(0 4px 5px rgb(0 0 0 / 45%));
+}
+
+.royal-auth-kicker {
+  display: none;
+}
+
+.royal-auth-heading {
+  margin: 0 0 14px;
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  color: var(--royal-color-purple-900);
+}
+
+.royal-auth-heading:first-child {
+  display: none;
+}
+
+.royal-divider {
+  margin: 2px auto 14px;
+}
+
+.royal-auth-form {
+  gap: 12px;
+  margin-top: 0;
+}
+
+.royal-input__control {
+  min-height: 52px;
+  border-radius: 10px;
+  background: rgb(255 249 233 / 88%);
+  box-shadow: inset 0 2px 6px rgb(61 34 23 / 12%);
+}
+
+.royal-button--primary {
+  min-height: 54px;
+  margin-top: 6px;
+  border: 2px solid var(--royal-color-gold-300);
+  color: var(--royal-color-ink-100);
+  font-family: var(--royal-font-display);
+  font-size: 1.2rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  background:
+    linear-gradient(180deg, #8c2aa0 0%, #68157e 56%, #3f0c53 100%);
+  box-shadow:
+    inset 0 0 0 3px rgb(214 169 67 / 28%),
+    0 8px 18px rgb(55 8 67 / 36%);
+}
+
+.royal-button--primary:hover:not(:disabled) {
+  filter: brightness(1.13) saturate(1.08);
+  box-shadow:
+    inset 0 0 0 3px rgb(241 212 119 / 42%),
+    0 0 20px rgb(169 67 192 / 42%);
+}
+
+.royal-auth-links {
+  margin-top: 10px;
+  gap: 2px 14px;
+}
+
+.royal-auth-links .royal-button--text {
+  min-height: 38px;
+  padding-inline: 4px;
+  color: var(--royal-color-purple-700);
+}
+
+.royal-auth-message,
+.royal-auth-invalid {
+  margin-top: 10px;
+}
+
+.royal-auth-brazier {
+  width: clamp(150px, 18vw, 280px);
+  height: clamp(220px, 38vh, 420px);
+  bottom: -1vh;
+  opacity: .92;
+}
+
+.royal-auth-brazier-left { left: max(-32px, 1.5vw); }
+.royal-auth-brazier-right { right: max(-32px, 1.5vw); }
+
+.royal-auth-fire-glow {
+  opacity: .8;
+  filter: blur(10px);
+}
+
+.royal-auth-particles { opacity: .62; }
+.royal-auth-mist { opacity: .5; }
+
+@keyframes royal-target-camera {
+  from { transform: scale(1.01) translateY(0); }
+  to { transform: scale(1.035) translateY(-.6%); }
+}
+
+@keyframes royal-target-logo-in {
+  from { opacity: 0; transform: translateY(-24px) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes royal-target-card-in {
+  from { opacity: 0; transform: translateY(28px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 640px) {
+  .royal-auth-backdrop {
+    background-position: center top !important;
+    transform: none;
+    animation: none;
+  }
+
+  .royal-auth-content {
+    padding: 18px 14px 16px;
+  }
+
+  .royal-brand {
+    width: min(92vw, 480px);
+    margin-top: 4px;
+  }
+
+  .royal-auth-card {
+    width: min(100%, 430px);
+    margin-bottom: 0;
+    padding: 22px 18px 18px;
+    background: rgb(234 221 191 / 96%);
+  }
+
+  .royal-auth-brazier {
+    width: 110px;
+    height: 170px;
+    bottom: -42px;
+    opacity: .7;
+  }
+
+  .royal-auth-brazier-left { left: -40px; }
+  .royal-auth-brazier-right { right: -40px; }
+}
+
+@media (max-height: 720px) and (min-width: 641px) {
+  .royal-brand { width: min(56vw, 560px); margin-top: 0; }
+  .royal-auth-card { margin-bottom: 10px; padding-block: 20px; }
+  .royal-input__control { min-height: 46px; }
+  .royal-button--primary { min-height: 48px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .royal-auth-backdrop,
+  .royal-brand,
+  .royal-auth-card {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* Deployment trigger: approved illustrated login background. */
