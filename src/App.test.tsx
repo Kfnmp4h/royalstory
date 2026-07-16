@@ -1,527 +1,177 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { StrictMode } from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createCampaignController } from './game/campaign/campaignController';
+import { createInitialPlayerSaveState } from './game/save/saveCodec';
 import type { BattleStatus } from './game/phaser/battleGame';
-import { getChapter } from './game/campaign/campaignDefinitions';
-import { createEquipmentController } from './game/equipment/equipmentController';
-import type { EquipmentItem } from './game/equipment/equipmentTypes';
+import type { PlayerApiRecord, PlayerApiResponse } from './game/save/saveTypes';
 import appSource from './App?raw';
 
 const battleGame = vi.hoisted(() => ({
   createBattleGame: vi.fn(),
   destroy: vi.fn(),
   setPaused: vi.fn(),
-  startBreakthrough: vi.fn(),
-  startBoss: vi.fn(),
-  equip: vi.fn(),
-  equipBest: vi.fn(),
+}));
+
+const playerApiMock = vi.hoisted(() => ({
+  command: vi.fn(),
 }));
 
 vi.mock('./game/phaser/battleGame', () => ({
   createBattleGame: battleGame.createBattleGame,
 }));
 
+vi.mock('./game/api/playerApi', () => ({
+  playerApi: {
+    command: playerApiMock.command,
+  },
+}));
+
 import { App } from './App';
 
 interface GameCallbacks {
-  parent: HTMLElement;
-  onStatus: (status: BattleStatus) => void;
-  onError: (error: Error) => void;
+  readonly parent: HTMLElement;
+  readonly initialState: PlayerApiRecord['state']['campaign'];
+  readonly onStatus: (status: BattleStatus) => void;
+  readonly onError: (error: Error) => void;
 }
 
-const emptyEquipment = createEquipmentController(() => 0).getSnapshot({
-  attack: 18,
-  defense: 2,
-  maxHp: 120,
+const createRecord = (saveVersion = 7, gold = 125): PlayerApiRecord => {
+  const state = createInitialPlayerSaveState();
+  return {
+    saveVersion,
+    state: { ...state, gold },
+    lastActivityAt: '2026-07-16T10:00:00.000Z',
+    updatedAt: '2026-07-16T10:00:00.000Z',
+  };
+};
+
+const createStatus = (record: PlayerApiRecord): BattleStatus => ({
+  state: 'running',
+  snapshot: createCampaignController(undefined, {
+    initialState: record.state.campaign,
+    combatRandom: () => 0.5,
+    equipmentRandom: () => 0.5,
+  }).getSnapshot(),
 });
 
-const equippedGloves: EquipmentItem = {
-  id: 'item-1',
-  slot: 'Gloves',
-  level: 8,
-  rarity: 'Rare',
-  name: 'Rare Gloves',
-  mainStats: { attack: 3, defense: 2, maxHp: 10 },
-  substats: [{ type: 'accuracy', value: 2 }],
-  power: 76,
+const deferred = <T,>() => {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((nextResolve) => { resolve = nextResolve; });
+  return { promise, resolve };
 };
 
-const epicGloves: EquipmentItem = {
-  id: 'item-2',
-  slot: 'Gloves',
-  level: 10,
-  rarity: 'Epic',
-  name: 'Epic Gloves',
-  mainStats: { attack: 4, defense: 3, maxHp: 20 },
-  substats: [
-    { type: 'criticalRate', value: 3 },
-    { type: 'attackSpeed', value: 2 },
-  ],
-  power: 118,
-};
-
-const rareHat: EquipmentItem = {
-  id: 'item-3',
-  slot: 'Hat',
-  level: 9,
-  rarity: 'Rare',
-  name: 'Rare Hat',
-  mainStats: { attack: 3, defense: 2, maxHp: 14 },
-  substats: [{ type: 'maxHp', value: 4 }],
-  power: 90,
-};
-
-const runningStatus: BattleStatus = {
-  state: 'running',
-  snapshot: {
-    mode: 'farming',
-    bossUnlocked: false,
-    chapter: getChapter(1),
-    unlockedChapter: 1,
-    encounter: getChapter(1).farming,
-    progression: {
-      level: 1,
-      xp: 0,
-      xpToNextLevel: 50,
-      totalXp: 0,
-      stats: { attack: 18, defense: 2, maxHp: 120 },
-    },
-    equipment: emptyEquipment,
-    combat: {
-      phase: 'fighting',
-      paused: false,
-      activeRuntimeMs: 65_000,
-      totalAttacks: 12,
-      defeatedEnemies: 3,
-      recoveryRemainingMs: 0,
-      player: {
-        id: 'player',
-        name: 'Knight',
-        maxHp: 100,
-        hp: 80,
-        attack: 10,
-        defense: 2,
-        attackIntervalMs: 1_000,
-        effectiveAttackIntervalMs: 1_000,
-        accuracy: 0,
-        evasion: 0,
-        criticalRate: 5,
-        criticalDamage: 100,
-        attackSpeed: 100,
-        damage: 0,
-        bossDamage: 0,
-        normalDamage: 0,
-        alive: true,
-      },
-      enemy: {
-        id: 'enemy',
-        name: 'Mossling',
-        maxHp: 40,
-        hp: 20,
-        attack: 5,
-        defense: 0,
-        attackIntervalMs: 1_500,
-        alive: true,
-      },
-    },
-  },
-};
-
-const equipmentStatus: BattleStatus = {
-  ...runningStatus,
-  snapshot: {
-    ...runningStatus.snapshot,
-    equipment: {
-      ...emptyEquipment,
-      inventory: [epicGloves, rareHat],
-      equipped: { ...emptyEquipment.equipped, Gloves: equippedGloves },
-      latestDrop: epicGloves,
-      totals: {
-        ...emptyEquipment.totals,
-        attack: 3,
-        defense: 2,
-        maxHp: 10,
-        accuracy: 2,
-      },
-      equipmentPower: 76,
-      effectiveStats: {
-        ...emptyEquipment.effectiveStats,
-        attack: 21,
-        defense: 4,
-        maxHp: 130,
-        accuracy: 2,
-      },
-      heroPower: 332,
-    },
-  },
-};
-
-const unlockedFarmingStatus: BattleStatus = {
-  ...runningStatus,
-  snapshot: {
-    ...runningStatus.snapshot,
-    bossUnlocked: true,
-  },
-};
-
-const campaignCompleteStatus: BattleStatus = {
-  state: 'running',
-  snapshot: {
-    mode: 'campaign-complete',
-    bossUnlocked: false,
-    chapter: getChapter(36),
-    unlockedChapter: 36,
-    encounter: null,
-    progression: {
-      level: 1,
-      xp: 0,
-      xpToNextLevel: 50,
-      totalXp: 0,
-      stats: { attack: 18, defense: 2, maxHp: 120 },
-    },
-    equipment: emptyEquipment,
-    combat: null,
-  },
-};
-
-describe('App', () => {
+describe('App server-authoritative experience', () => {
   let callbacks: GameCallbacks;
+  let record: PlayerApiRecord;
+  let onRecordChange: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    record = createRecord();
+    onRecordChange = vi.fn();
     Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+
     battleGame.createBattleGame.mockImplementation((options: GameCallbacks) => {
       callbacks = options;
-      options.onStatus(runningStatus);
+      options.onStatus(createStatus(record));
       return {
         destroy: battleGame.destroy,
         setPaused: battleGame.setPaused,
-        startBreakthrough: battleGame.startBreakthrough,
-        startBoss: battleGame.startBoss,
-        equip: battleGame.equip,
-        equipBest: battleGame.equipBest,
       };
     });
+
+    playerApiMock.command.mockResolvedValue({ kind: 'saved', record } satisfies PlayerApiResponse);
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
+  const renderApp = (initialNotice: string | null = null) => render(
+    <App record={record} onRecordChange={onRecordChange} initialNotice={initialNotice} />,
+  );
 
-  it('introduces the RoyalStory combat sandbox', () => {
-    render(<App />);
+  it('renders canonical gold and campaign state only after receiving a server record', () => {
+    renderApp();
+
     expect(screen.getByRole('heading', { name: 'RoyalStory' })).toBeInTheDocument();
-    expect(screen.getByText('Milestone 5 · Equipment Frontier')).toBeInTheDocument();
-  });
-
-  it('shows level, XP, and all three base stats', () => {
-    render(<App />);
-
-    expect(screen.getByRole('region', { name: 'Hero progression' })).toBeInTheDocument();
-    expect(screen.getByText('Level 1 / 200')).toBeInTheDocument();
-    expect(screen.getByText('0 / 50 XP')).toBeInTheDocument();
-    expect(screen.getByText('18', { selector: 'dd' })).toBeInTheDocument();
-    expect(screen.getByText('2', { selector: 'dd' })).toBeInTheDocument();
-    expect(screen.getByText('120', { selector: 'dd' })).toBeInTheDocument();
-    expect(screen.getByRole('progressbar', { name: 'Experience' })).toHaveAttribute('value', '0');
-  });
-
-  it('shows the newest level-up message briefly without recreating the game', () => {
-    vi.useFakeTimers();
-    render(<App />);
-
-    act(() => callbacks.onStatus({
-      ...runningStatus,
-      snapshot: {
-        ...runningStatus.snapshot,
-        progression: {
-          level: 3,
-          xp: 15,
-          xpToNextLevel: 100,
-          totalXp: 140,
-          stats: { attack: 22, defense: 4, maxHp: 136 },
-        },
-      },
-    }));
-
-    expect(screen.getByText('Level 3 reached')).toBeInTheDocument();
-    expect(battleGame.createBattleGame).toHaveBeenCalledTimes(1);
-    act(() => vi.advanceTimersByTime(2_500));
-    expect(screen.queryByText('Level 3 reached')).not.toBeInTheDocument();
-  });
-
-  it('shows a full MAX progress state at level 200', () => {
-    render(<App />);
-
-    act(() => callbacks.onStatus({
-      ...campaignCompleteStatus,
-      snapshot: {
-        ...campaignCompleteStatus.snapshot,
-        progression: {
-          level: 200,
-          xp: 0,
-          xpToNextLevel: 0,
-          totalXp: 502_475,
-          stats: { attack: 416, defense: 201, maxHp: 1_712 },
-        },
-      },
-    }));
-
-    expect(screen.getByText('MAX')).toBeInTheDocument();
-    expect(screen.getByRole('progressbar', { name: 'Experience' })).toHaveAttribute('value', '1');
-  });
-
-  it('immediately displays Paused when initially hidden before the first battle status', () => {
-    Object.defineProperty(document, 'hidden', { value: true, configurable: true });
-    battleGame.createBattleGame.mockImplementation((options: GameCallbacks) => {
-      callbacks = options;
-      return {
-        destroy: battleGame.destroy,
-        setPaused: battleGame.setPaused,
-        startBreakthrough: battleGame.startBreakthrough,
-        startBoss: battleGame.startBoss,
-        equip: battleGame.equip,
-        equipBest: battleGame.equipBest,
-      };
-    });
-
-    render(<App />);
-
-    expect(battleGame.setPaused).toHaveBeenLastCalledWith(true);
-    expect(screen.getByText('Paused')).toBeInTheDocument();
-  });
-
-  it('mounts exactly one battle game in its labelled host and destroys it on unmount', () => {
-    const { container, unmount } = render(<App />);
-    const host = screen.getByLabelText('RoyalStory automatic battle');
-
-    expect(container.querySelectorAll('.battle-host')).toHaveLength(1);
-    expect(battleGame.createBattleGame).toHaveBeenCalledTimes(1);
-    expect(callbacks.parent).toBe(host);
-
-    unmount();
-    expect(battleGame.destroy).toHaveBeenCalledTimes(1);
-  });
-
-  it('groups the battle and diagnostic values into named regions', () => {
-    render(<App />);
-
-    const battleRegion = screen.getByRole('region', { name: 'Automatic battle' });
-    const diagnosticsRegion = screen.getByRole('region', { name: 'Combat diagnostics' });
-
-    expect(battleRegion).toContainElement(screen.getByLabelText('RoyalStory automatic battle'));
-    expect(diagnosticsRegion).toContainElement(screen.getByText('Active runtime'));
-    expect(diagnosticsRegion).toContainElement(screen.getByText('Total attacks'));
-    expect(diagnosticsRegion).toContainElement(screen.getByText('Defeated enemies'));
-  });
-
-  it('ignores callbacks from a cleaned-up StrictMode battle lifetime', () => {
-    const lifetimes: GameCallbacks[] = [];
-    const firstDestroy = vi.fn();
-    battleGame.createBattleGame.mockImplementation((options: GameCallbacks) => {
-      lifetimes.push(options);
-      return {
-        destroy: lifetimes.length === 1 ? firstDestroy : battleGame.destroy,
-        setPaused: battleGame.setPaused,
-        startBreakthrough: battleGame.startBreakthrough,
-        startBoss: battleGame.startBoss,
-        equip: battleGame.equip,
-        equipBest: battleGame.equipBest,
-      };
-    });
-
-    const { unmount } = render(<StrictMode><App /></StrictMode>);
-    expect(battleGame.createBattleGame).toHaveBeenCalledTimes(2);
-    expect(firstDestroy).toHaveBeenCalledTimes(1);
-
-    act(() => lifetimes[1]?.onStatus(runningStatus));
-    expect(screen.getByText('Running')).toBeInTheDocument();
-
-    act(() => {
-      lifetimes[0]?.onStatus({
-        ...runningStatus,
-        state: 'paused',
-        snapshot: {
-          ...runningStatus.snapshot,
-          combat: { ...runningStatus.snapshot.combat!, paused: true },
-        },
-      });
-      lifetimes[0]?.onError(new Error('stale engine failure'));
-    });
-
-    expect(screen.getByText('Running')).toBeInTheDocument();
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-
-    unmount();
-    expect(battleGame.destroy).toHaveBeenCalledTimes(1);
-  });
-
-  it('does not recreate the battle game when status changes', () => {
-    render(<App />);
-
-    act(() => callbacks.onStatus({
-      ...runningStatus,
-      state: 'paused',
-      snapshot: {
-        ...runningStatus.snapshot,
-        combat: { ...runningStatus.snapshot.combat!, paused: true },
-      },
-    }));
-
-    expect(screen.getByText('Paused')).toBeInTheDocument();
-    expect(battleGame.createBattleGame).toHaveBeenCalledTimes(1);
-  });
-
-  it('shows chapter farming and starts a breakthrough from the campaign control', () => {
-    render(<App />);
-
+    expect(screen.getByText('Milestone 6 · Online Kingdom')).toBeInTheDocument();
+    expect(screen.getByText('Gold: 125')).toBeInTheDocument();
     expect(screen.getByText('Chapter 1 / 36')).toBeInTheDocument();
-    expect(screen.getByText('Whisperwood')).toBeInTheDocument();
+    expect(screen.getByText('Level 1 / 200')).toBeInTheDocument();
+  });
+
+  it('hydrates one Phaser renderer from the canonical campaign state and destroys it on unmount', () => {
+    const { unmount } = renderApp();
+
+    expect(battleGame.createBattleGame).toHaveBeenCalledTimes(1);
+    expect(callbacks.initialState).toEqual(record.state.campaign);
+    expect(callbacks.parent).toBe(screen.getByLabelText('RoyalStory automatic battle'));
+
+    unmount();
+    expect(battleGame.destroy).toHaveBeenCalledOnce();
+  });
+
+  it('sends campaign actions as typed commands with the expected save version', async () => {
+    renderApp();
     fireEvent.click(screen.getByRole('button', { name: 'Start breakthrough' }));
 
-    expect(battleGame.startBreakthrough).toHaveBeenCalledOnce();
-  });
-
-  it('keeps farming visible and offers the boss action after a breakthrough win', () => {
-    render(<App />);
-
-    act(() => callbacks.onStatus(unlockedFarmingStatus));
-
-    expect(screen.getByText('Farming â€” boss unlocked')).toBeInTheDocument();
-    const bossButton = screen.getByRole('button', { name: 'Challenge boss' });
-    expect(bossButton).toBeEnabled();
-    expect(screen.queryByRole('button', { name: 'Start breakthrough' })).not.toBeInTheDocument();
-
-    fireEvent.click(bossButton);
-    expect(battleGame.startBoss).toHaveBeenCalledOnce();
-  });
-
-  it('shows no campaign action during breakthrough and boss battles', () => {
-    render(<App />);
-
-    act(() => callbacks.onStatus({
-      ...runningStatus,
-      snapshot: { ...runningStatus.snapshot, mode: 'breakthrough', encounter: getChapter(1).breakthrough },
+    await waitFor(() => expect(playerApiMock.command).toHaveBeenCalledWith({
+      type: 'startBreakthrough',
+      expectedVersion: 7,
     }));
-    expect(screen.getByText('Breakthrough')).toBeInTheDocument();
-    expect(within(screen.getByRole('region', { name: 'Campaign progress' })).queryByRole('button')).not.toBeInTheDocument();
-
-    act(() => callbacks.onStatus({
-      ...runningStatus,
-      snapshot: { ...runningStatus.snapshot, mode: 'boss', encounter: getChapter(1).boss },
-    }));
-    expect(screen.getByText('Boss battle')).toBeInTheDocument();
-    expect(within(screen.getByRole('region', { name: 'Campaign progress' })).queryByRole('button')).not.toBeInTheDocument();
+    expect(onRecordChange).toHaveBeenCalledWith(record);
   });
 
-  it('shows no campaign action after completing the campaign', () => {
-    render(<App />);
+  it('disables mutations and shows Saving while a command is pending', async () => {
+    const pending = deferred<PlayerApiResponse>();
+    playerApiMock.command.mockReturnValueOnce(pending.promise);
+    renderApp();
 
-    act(() => callbacks.onStatus(campaignCompleteStatus));
+    const button = screen.getByRole('button', { name: 'Start breakthrough' });
+    fireEvent.click(button);
 
-    expect(within(screen.getByRole('region', { name: 'Campaign progress' })).queryByRole('button')).not.toBeInTheDocument();
-    expect(screen.getByText('Campaign complete')).toBeInTheDocument();
+    expect(button).toBeDisabled();
+    expect(screen.getByText('Saving')).toBeInTheDocument();
+
+    await act(async () => pending.resolve({ kind: 'saved', record }));
+    await waitFor(() => expect(button).toBeEnabled());
   });
 
-  it('does not create a second game for campaign status updates', () => {
-    render(<App />);
+  it('accepts a newer stale record and tells the user that the server replaced the tab', async () => {
+    const newerRecord = createRecord(9, 400);
+    playerApiMock.command.mockResolvedValueOnce({ kind: 'stale', record: newerRecord });
+    renderApp();
 
-    act(() => callbacks.onStatus(unlockedFarmingStatus));
-    act(() => callbacks.onStatus(campaignCompleteStatus));
+    fireEvent.click(screen.getByRole('button', { name: 'Start breakthrough' }));
 
-    expect(battleGame.createBattleGame).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onRecordChange).toHaveBeenCalledWith(newerRecord));
+    expect(screen.getByRole('status')).toHaveTextContent('A newer server save replaced this tab’s local view.');
   });
 
-  it('renders effective hero stats, total power, and all fourteen equipment slots', () => {
-    render(<App />);
-    act(() => callbacks.onStatus(equipmentStatus));
+  it('keeps canonical state unchanged and exposes a recoverable server error', async () => {
+    playerApiMock.command.mockResolvedValueOnce({ kind: 'unavailable', message: 'Maintenance window' });
+    renderApp();
 
-    const equipment = screen.getByRole('region', { name: 'Equipment' });
-    expect(within(equipment).getAllByRole('group', { name: /equipment slot/i })).toHaveLength(14);
-    expect(within(equipment).getByRole('group', { name: 'Gloves equipment slot' })).toHaveTextContent('Rare Gloves');
-    expect(within(equipment).getByRole('group', { name: 'Ring equipment slot' })).toHaveTextContent('Empty');
-    expect(within(equipment).getByRole('group', { name: 'Ring 2 equipment slot' })).toHaveTextContent('Empty');
-    expect(screen.getByText('Total Power')).toBeInTheDocument();
-    expect(screen.getByText('332')).toBeInTheDocument();
-    expect(screen.getByText('21', { selector: 'dd' })).toBeInTheDocument();
-    expect(screen.getByText('4', { selector: 'dd' })).toBeInTheDocument();
-    expect(screen.getByText('130', { selector: 'dd' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Start breakthrough' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Maintenance window');
+    expect(onRecordChange).not.toHaveBeenCalled();
   });
 
-  it('orders inventory, compares a selection, and forwards equipment commands', () => {
-    render(<App />);
-    act(() => callbacks.onStatus(equipmentStatus));
-
-    const inventory = screen.getByRole('region', { name: 'Inventory' });
-    const itemButtons = within(inventory).getAllByRole('button');
-    expect(itemButtons[0]).toHaveAccessibleName(/Epic Gloves.*Power 118/i);
-    expect(itemButtons[1]).toHaveAccessibleName(/Rare Hat.*Power 90/i);
-
-    fireEvent.click(itemButtons[0]!);
-    expect(screen.getByText('Upgrade +42 power')).toBeInTheDocument();
-    expect(screen.getByText('Critical Rate').closest('div')).toHaveTextContent(/Critical Rate\s*\+3%/);
-    expect(screen.getByText('Attack Speed').closest('div')).toHaveTextContent(/Attack Speed\s*\+2%/);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Equip selected' }));
-    expect(battleGame.equip).toHaveBeenCalledWith('item-2');
-    fireEvent.click(screen.getByRole('button', { name: 'Equip Best' }));
-    expect(battleGame.equipBest).toHaveBeenCalledOnce();
-  });
-
-  it('announces the latest drop and keeps one Phaser game through equipment-only updates', () => {
-    render(<App />);
-
-    act(() => callbacks.onStatus(equipmentStatus));
-    expect(screen.getByRole('status', { name: 'Latest equipment drop' })).toHaveTextContent(
-      'New drop: Epic Gloves, level 10, power 118',
-    );
-
-    act(() => callbacks.onStatus({
-      ...equipmentStatus,
-      snapshot: {
-        ...equipmentStatus.snapshot,
-        equipment: {
-          ...equipmentStatus.snapshot.equipment,
-          inventory: [rareHat],
-          equipped: { ...equipmentStatus.snapshot.equipment.equipped, Gloves: epicGloves },
-        },
-      },
-    }));
-
-    expect(battleGame.createBattleGame).toHaveBeenCalledTimes(1);
-  });
-
-  it('does not include browser persistence APIs', () => {
-    expect(appSource).not.toMatch(/localStorage|sessionStorage|IndexedDB|document\\.cookie/);
-  });
-
-  it('pauses the controller and displayed status when the document becomes hidden', () => {
-    const { unmount } = render(<App />);
-    battleGame.setPaused.mockClear();
+  it('pauses only the renderer when the page becomes hidden', () => {
+    renderApp();
     Object.defineProperty(document, 'hidden', { value: true, configurable: true });
-
-    act(() => document.dispatchEvent(new Event('visibilitychange')));
+    document.dispatchEvent(new Event('visibilitychange'));
 
     expect(battleGame.setPaused).toHaveBeenLastCalledWith(true);
     expect(screen.getByText('Paused')).toBeInTheDocument();
-
-    unmount();
-    battleGame.setPaused.mockClear();
-    act(() => document.dispatchEvent(new Event('visibilitychange')));
-    expect(battleGame.setPaused).not.toHaveBeenCalled();
   });
 
-  it('shows live diagnostics and surfaces engine errors', () => {
-    render(<App />);
+  it('shows server notices supplied by the authenticated session owner', () => {
+    renderApp('Progress updated from another device');
+    expect(screen.getByRole('status')).toHaveTextContent('Progress updated from another device');
+  });
 
-    expect(screen.getByText('Running')).toBeInTheDocument();
-    expect(screen.getByText('01:05')).toBeInTheDocument();
-    expect(screen.getByText('12')).toBeInTheDocument();
-    expect(screen.getByText('3')).toBeInTheDocument();
-
-    act(() => callbacks.onError(new Error('engine failed')));
-
-    expect(screen.getByText('Error')).toBeInTheDocument();
-    expect(screen.getByRole('alert')).toHaveTextContent('engine failed');
+  it('contains no browser game persistence or direct Supabase access', () => {
+    expect(appSource).not.toMatch(/localStorage|sessionStorage|indexedDB|document\.cookie/);
+    expect(appSource).not.toMatch(/createClient\(|@supabase/);
+    expect(appSource).toContain("playerApi.command");
   });
 });
