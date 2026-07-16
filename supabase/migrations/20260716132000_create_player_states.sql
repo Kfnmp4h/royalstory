@@ -8,29 +8,26 @@ create table if not exists public.player_states (
   updated_at timestamptz not null default now()
 );
 
-create index if not exists player_states_updated_at_idx
-  on public.player_states (updated_at);
-
 alter table public.player_states enable row level security;
 
 create policy "players_read_own_state"
 on public.player_states
 for select
 to authenticated
-using (auth.uid() = user_id);
+using ((select auth.uid()) = user_id);
 
 create policy "players_insert_own_state"
 on public.player_states
 for insert
 to authenticated
-with check (auth.uid() = user_id);
+with check ((select auth.uid()) = user_id);
 
 create policy "players_update_own_state"
 on public.player_states
 for update
 to authenticated
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
 
 create or replace function public.save_player_state(
   player_user_id uuid,
