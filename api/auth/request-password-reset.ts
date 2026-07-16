@@ -8,8 +8,8 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const body = await readJsonObject(request);
     const email = typeof body.email === 'string' ? body.email : '';
-    await createAuthService(auth.client, new URL(request.url).origin).requestPasswordReset(email);
-    return auth.applyCookies(jsonResponse({ ok: true }));
+    const result = await createAuthService(auth.client, new URL(request.url).origin).requestPasswordReset(email);
+    return auth.applyCookies(jsonResponse(result, result.ok ? 200 : 503));
   } catch (error) {
     return auth.applyCookies(handleApiError(error));
   }
