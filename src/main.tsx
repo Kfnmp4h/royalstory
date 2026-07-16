@@ -4,6 +4,7 @@ import { AuthRoot } from './AuthRoot';
 import './styles.css';
 import './reset.css';
 import './dialogs.css';
+import './auth/royal-auth.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode><AuthRoot /></StrictMode>,
