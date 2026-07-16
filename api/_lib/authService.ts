@@ -23,7 +23,7 @@ export function createAuthService(client: SupabaseClient, appOrigin: string) {
     const credentials = normalizeCredentials(input);
     const { data, error } = await client.auth.signUp({
       ...credentials,
-      options: { emailRedirectTo: new URL('/auth/confirm', appOrigin).toString() },
+      options: { emailRedirectTo: new URL('/api/auth/confirm', appOrigin).toString() },
     });
     if (error) return { ok: false, code: 'invalid_credentials' };
     if (!data.session) return { ok: false, code: 'confirmation_required' };
