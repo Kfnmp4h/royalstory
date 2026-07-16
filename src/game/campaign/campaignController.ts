@@ -5,12 +5,12 @@ import { createProgressionController } from '../progression/progressionControlle
 import type { CombatEngine, CombatEvent, CombatSnapshot } from '../types';
 import { CHAPTERS, getChapter } from './campaignDefinitions';
 import type {
-  CampaignController,
   CampaignControllerOptions,
   CampaignMode,
   CampaignSnapshot,
   ChapterDefinition,
   EncounterDefinition,
+  PersistentCampaignController,
 } from './campaignTypes';
 
 const activeModes: ReadonlySet<CampaignMode> = new Set(['farming', 'breakthrough', 'boss']);
@@ -72,7 +72,7 @@ const hasOrderedEncounters = (chapters: readonly ChapterDefinition[]): boolean =
 export const createCampaignController = (
   chapters: readonly ChapterDefinition[] = CHAPTERS,
   options: CampaignControllerOptions = {},
-): CampaignController => {
+): PersistentCampaignController => {
   if (!hasOrderedEncounters(chapters)) throw new Error('Campaign must contain 36 ordered chapters');
 
   const initial = options.initialState;
