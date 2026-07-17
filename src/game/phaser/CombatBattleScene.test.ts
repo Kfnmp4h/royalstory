@@ -75,9 +75,9 @@ describe('CombatBattleScene presentation runtime', () => {
   it('suppresses only legacy feedback replaced by the presentation controller', () => {
     const events: readonly CombatEvent[] = [
       { type: 'attack', attacker: 'player', target: 'enemy' },
-      { type: 'damage', source: 'player', target: 'enemy', amount: 20 },
-      { type: 'critical', source: 'player', target: 'enemy' },
-      { type: 'miss', source: 'enemy', target: 'player' },
+      { type: 'damage', target: 'enemy', amount: 20, hp: 80 },
+      { type: 'critical', attacker: 'player', target: 'enemy' },
+      { type: 'miss', attacker: 'enemy', target: 'player' },
       { type: 'death', actor: 'enemy' },
       { type: 'death', actor: 'player' },
       { type: 'respawn', actor: 'player' },
