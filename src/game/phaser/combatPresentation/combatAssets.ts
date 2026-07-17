@@ -13,7 +13,7 @@ export interface CombatAnimationManager {
   generateFrameNumbers(key: string, range: { readonly start: number; readonly end: number }): unknown;
   create(config: {
     readonly key: string;
-    readonly frames: unknown;
+    readonly frames: any;
     readonly frameRate: number;
     readonly repeat: number;
     readonly hideOnComplete: boolean;
