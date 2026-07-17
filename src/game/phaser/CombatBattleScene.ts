@@ -56,6 +56,10 @@ export const shouldAnimateLegacyCombatEvent = (
   return true;
 };
 
+export const shouldCompleteEnemyPresentationDeath = (event: CombatEvent): boolean => (
+  event.type === 'respawn' && event.actor === 'enemy'
+);
+
 export class CombatBattleScene extends BattleScene {
   private presentation?: CombatPresentationController;
   private readonly delayedHealthLayers = new Map<ActorId, DelayedHealthLayer>();
@@ -95,6 +99,9 @@ export class CombatBattleScene extends BattleScene {
     const legacyDrawHealth = internals.drawHealth.bind(this);
 
     internals.animateEvent = (event): void => {
+      if (this.presentation && shouldCompleteEnemyPresentationDeath(event)) {
+        this.presentation.completeEnemyDeath();
+      }
       if (shouldAnimateLegacyCombatEvent(event, this.presentation !== undefined)) {
         legacyAnimateEvent(event);
       }
