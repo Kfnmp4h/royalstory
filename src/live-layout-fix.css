@@ -1,0 +1,50 @@
+.auth-logo {
+  top: clamp(12px, 2.5vh, 34px);
+  width: min(58vw, 820px);
+  max-height: 34vh;
+}
+
+.auth-panel {
+  width: min(100%, 390px);
+  gap: 8px;
+  padding: 18px 22px 14px;
+}
+
+.auth-panel h1 {
+  margin-bottom: 2px;
+  font-size: clamp(1.2rem, 2.4vw, 1.55rem);
+}
+
+.auth-panel input {
+  min-height: 42px;
+}
+
+.auth-panel .primary-action {
+  min-height: 45px;
+}
+
+@media (max-width: 640px) {
+  .auth-logo {
+    top: 6px;
+    width: min(96vw, 560px);
+    max-height: 29vh;
+  }
+
+  .auth-panel {
+    width: min(100%, 360px);
+    padding: 17px 15px 13px;
+  }
+}
+
+@media (max-height: 760px) and (min-width: 641px) {
+  .auth-logo {
+    top: 4px;
+    width: min(48vw, 600px);
+    max-height: 28vh;
+  }
+
+  .auth-panel {
+    width: min(100%, 370px);
+    padding: 15px 20px 12px;
+  }
+}
