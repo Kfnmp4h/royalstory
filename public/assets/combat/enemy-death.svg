@@ -12,7 +12,7 @@
   <polygon fill="#678b42" points="57,11 64,11 64,18 59,18 59,21 55,21 55,15 57,15"/>
   <polygon fill="#304934" points="70,15 83,15 83,25 88,25 88,34 78,34 78,39 68,39 68,29 72,29"/>
   <polygon fill="#789b47" points="73,18 80,18 80,27 84,27 84,31 76,31 76,35 71,35 71,28 74,28"/>
-  <polygon fill="#5d813e" points="50,27 59,27 59,34 54,34 54,40 47,40 47,32 50,32"/>
+  <polygon fill="#5d813e" points="50,27 59,27 59,34 54,34 54,40 48,40 48,32 50,32"/>
   <rect x="86" y="10" width="3" height="4" fill="#b2c65c"/>
   <rect x="63" y="38" width="4" height="3" fill="#92ad4c"/>
   <!-- Frame 3: moss shards scatter away from the former silhouette. -->
@@ -21,8 +21,8 @@
   <polygon fill="#94ad50" points="130,13 136,17 133,24 127,20"/>
   <polygon fill="#526f3b" points="106,23 114,27 110,35 102,31"/>
   <polygon fill="#7f9d49" points="121,29 128,33 124,40 117,36"/>
-  <polygon fill="#314735" points="139,28 145,32 141,38 135,34"/>
-  <rect x="94" y="25" width="4" height="5" fill="#b2c65c"/>
+  <polygon fill="#314735" points="139,28 143,32 141,38 135,34"/>
+  <rect x="96" y="25" width="4" height="5" fill="#b2c65c"/>
   <rect x="132" y="5" width="3" height="4" fill="#5d813e"/>
   <!-- Frame 4: only a few dim leaflike shards remain. -->
   <polygon fill="#506b39" points="153,8 159,12 156,18 150,14"/>
