@@ -14,7 +14,7 @@
   <rect x="48" y="3" width="3" height="3" fill="#eab546"/>
   <rect x="92" y="38" width="3" height="3" fill="#c94a4b"/>
   <!-- Frame 3: bright crossing rays at maximum impact. -->
-  <polygon fill="#bd3c43" points="120,0 126,15 143,7 131,21 145,25 128,30 120,47 114,31 97,40 109,25 96,17 113,18"/>
+  <polygon fill="#bd3c43" points="120,0 126,15 143,7 131,21 143,25 128,30 120,47 114,31 97,40 109,25 96,17 113,18"/>
   <polygon fill="#f0bd4d" points="120,4 125,18 139,12 129,22 140,25 125,28 120,43 115,29 101,35 111,24 101,18 115,21"/>
   <polygon fill="#fffdf4" points="120,8 124,20 134,16 127,23 136,25 123,26 120,39 117,27 106,32 114,24 105,19 117,22"/>
   <rect x="118" y="21" width="5" height="5" fill="#ffffff"/>
