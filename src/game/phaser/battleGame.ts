@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { createCampaignController } from '../campaign/campaignController';
 import type { CampaignSnapshot, PersistentCampaignController } from '../campaign/campaignTypes';
 import type { CampaignPersistentState } from '../save/saveTypes';
-import { BattleScene } from './BattleScene';
+import { CombatBattleScene } from './CombatBattleScene';
 
 export interface BattleController {
   setPaused(paused: boolean): void;
@@ -31,7 +31,7 @@ export function createBattleGame({
   onStatus,
   onError,
 }: CreateBattleGameOptions): BattleController {
-  const battleScene = new BattleScene(onStatus, onError);
+  const battleScene = new CombatBattleScene(onStatus, onError);
   if (initialState) {
     Object.assign(
       battleScene as unknown as { campaign: PersistentCampaignController },
