@@ -8,6 +8,7 @@ import type {
 import {
   createCombatBattlePresentationController,
   shouldAnimateLegacyCombatEvent,
+  shouldCompleteEnemyPresentationDeath,
 } from './CombatBattleScene';
 
 const createSprite = (): PhaserCombatEffectSprite => {
@@ -93,5 +94,11 @@ describe('CombatBattleScene presentation runtime', () => {
       true,
     ]);
     expect(events.every((event) => shouldAnimateLegacyCombatEvent(event, false))).toBe(true);
+  });
+
+  it('releases an active enemy-death presentation when enemy respawn begins', () => {
+    expect(shouldCompleteEnemyPresentationDeath({ type: 'respawn', actor: 'enemy' })).toBe(true);
+    expect(shouldCompleteEnemyPresentationDeath({ type: 'respawn', actor: 'player' })).toBe(false);
+    expect(shouldCompleteEnemyPresentationDeath({ type: 'death', actor: 'enemy' })).toBe(false);
   });
 });
