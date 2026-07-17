@@ -6,10 +6,10 @@
   min-height: 100dvh;
   place-items: end center;
   overflow: hidden;
-  padding: clamp(20px, 4vh, 52px) 16px;
+  padding: 18px 16px clamp(18px, 3vh, 34px);
   color: #2b1830;
   background:
-    linear-gradient(180deg, rgb(4 2 8 / 10%), rgb(4 2 8 / 18%) 48%, rgb(4 2 8 / 58%) 100%),
+    linear-gradient(180deg, rgb(4 2 8 / 8%), rgb(4 2 8 / 12%) 52%, rgb(4 2 8 / 54%) 100%),
     url('./assets/backgrounds/login/throne-room.webp') center center / cover no-repeat;
 }
 
@@ -22,7 +22,7 @@
   background:
     radial-gradient(circle at 10% 58%, rgb(255 159 42 / 20%), transparent 22%),
     radial-gradient(circle at 90% 58%, rgb(255 159 42 / 20%), transparent 22%),
-    linear-gradient(90deg, rgb(0 0 0 / 28%), transparent 22% 78%, rgb(0 0 0 / 28%));
+    linear-gradient(90deg, rgb(0 0 0 / 26%), transparent 22% 78%, rgb(0 0 0 / 26%));
   animation: royal-live-light 2.4s ease-in-out infinite alternate;
 }
 
@@ -32,7 +32,7 @@
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: .48;
+  opacity: .42;
   background-image:
     radial-gradient(circle, rgb(255 209 103 / 82%) 0 1px, transparent 2px),
     radial-gradient(circle, rgb(255 160 49 / 66%) 0 1px, transparent 2px);
@@ -41,78 +41,62 @@
   animation: royal-live-embers 8s linear infinite;
 }
 
+.auth-logo {
+  position: absolute;
+  top: clamp(18px, 4vh, 54px);
+  left: 50%;
+  z-index: 2;
+  width: min(46vw, 640px);
+  max-height: 27vh;
+  object-fit: contain;
+  transform: translateX(-50%);
+  filter:
+    drop-shadow(0 10px 18px rgb(0 0 0 / 62%))
+    drop-shadow(0 0 22px rgb(245 196 74 / 20%));
+  animation: royal-logo-in 700ms cubic-bezier(.2,.8,.2,1) both;
+}
+
 .auth-panel {
   position: relative;
   display: grid;
-  width: min(100%, 500px);
-  gap: 13px;
-  padding: 28px clamp(20px, 4vw, 34px) 24px;
+  width: min(100%, 430px);
+  gap: 10px;
+  padding: 22px clamp(18px, 3vw, 28px) 18px;
   border: 2px solid #ebc66d;
-  border-radius: 20px;
+  border-radius: 17px;
   color: #34213a;
   background:
-    linear-gradient(145deg, rgb(255 255 255 / 46%), transparent 42%),
-    rgb(239 226 196 / 96%);
+    linear-gradient(145deg, rgb(255 255 255 / 42%), transparent 42%),
+    rgb(239 226 196 / 95%);
   box-shadow:
-    0 28px 80px rgb(0 0 0 / 70%),
-    inset 0 0 0 5px rgb(133 84 22 / 24%),
-    inset 0 0 34px rgb(255 249 224 / 68%);
-  backdrop-filter: blur(5px);
+    0 24px 64px rgb(0 0 0 / 68%),
+    inset 0 0 0 4px rgb(133 84 22 / 23%),
+    inset 0 0 28px rgb(255 249 224 / 60%);
+  backdrop-filter: blur(4px);
   animation: royal-live-panel-in 650ms cubic-bezier(.2,.8,.2,1) both;
 }
 
 .auth-panel::before {
-  content: '◆';
+  content: '';
   position: absolute;
-  top: -25px;
+  top: -18px;
   left: 50%;
-  display: grid;
-  width: 58px;
-  height: 46px;
-  place-items: center;
+  width: 46px;
+  height: 34px;
   transform: translateX(-50%) rotate(45deg);
-  border: 3px solid #eac56b;
-  color: #f5d986;
-  font-size: 0;
+  border: 2px solid #eac56b;
   background:
     radial-gradient(circle, #cf69e9 0 23%, #79258e 25% 43%, #33103e 45% 55%, transparent 57%),
     linear-gradient(135deg, #f4dc8d, #8f5b1e);
-  box-shadow: 0 7px 18px rgb(0 0 0 / 48%);
-}
-
-.auth-panel .eyebrow {
-  display: none;
+  box-shadow: 0 6px 14px rgb(0 0 0 / 44%);
 }
 
 .auth-panel h1 {
-  margin: 0 0 2px;
-  color: #f4d47c;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(2.6rem, 8vw, 4.9rem);
-  line-height: .92;
-  text-align: center;
-  letter-spacing: -.055em;
-  text-shadow:
-    0 2px 0 #7b4616,
-    0 5px 12px rgb(0 0 0 / 55%),
-    0 0 24px rgb(255 212 103 / 28%);
-}
-
-.auth-panel h1::before {
-  content: '♛';
-  display: block;
-  margin-bottom: -4px;
-  color: #efd077;
-  font-size: .48em;
-  line-height: 1;
-  letter-spacing: 0;
-}
-
-.auth-panel h2 {
   margin: 0 0 4px;
   color: #4b245f;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(1.35rem, 4vw, 1.8rem);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  line-height: 1.1;
   text-align: center;
 }
 
@@ -122,23 +106,23 @@
 }
 
 .auth-panel form {
-  gap: 12px;
+  gap: 10px;
 }
 
 .auth-panel label {
-  gap: 6px;
+  gap: 5px;
   color: #4b3348;
-  font-size: .84rem;
+  font-size: .8rem;
   font-weight: 800;
-  letter-spacing: .035em;
+  letter-spacing: .03em;
 }
 
 .auth-panel input {
   width: 100%;
-  min-height: 50px;
-  padding: 11px 14px;
+  min-height: 44px;
+  padding: 9px 12px;
   border: 1px solid #9b7848;
-  border-radius: 10px;
+  border-radius: 9px;
   color: #2b1830;
   background: rgb(255 251 237 / 92%);
   box-shadow: inset 0 2px 7px rgb(64 35 20 / 14%);
@@ -153,20 +137,20 @@
 
 .auth-panel .primary-action {
   width: 100%;
-  min-height: 54px;
-  margin-top: 4px;
-  padding: 10px 18px;
+  min-height: 48px;
+  margin-top: 2px;
+  padding: 9px 16px;
   border: 2px solid #ebc66d;
-  border-radius: 12px;
+  border-radius: 10px;
   color: #fff8e4;
   background: linear-gradient(180deg, #9832ac 0%, #6b197e 52%, #3e0b50 100%);
   box-shadow:
     inset 0 0 0 3px rgb(255 218 112 / 18%),
     0 8px 18px rgb(60 10 68 / 38%);
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 1.16rem;
+  font-size: 1.05rem;
   font-weight: 800;
-  letter-spacing: .065em;
+  letter-spacing: .055em;
   text-transform: uppercase;
   cursor: pointer;
   transition: transform 140ms ease, filter 140ms ease, box-shadow 140ms ease;
@@ -193,17 +177,17 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 4px 16px;
+  gap: 2px 14px;
 }
 
 .auth-actions button {
-  min-height: 38px;
-  padding: 6px 3px;
+  min-height: 32px;
+  padding: 4px 2px;
   border: 0;
   color: #69217c;
   background: transparent;
   font: inherit;
-  font-size: .9rem;
+  font-size: .82rem;
   font-weight: 750;
   cursor: pointer;
 }
@@ -214,11 +198,25 @@
 }
 
 .auth-panel [role='status'],
-.auth-panel [role='alert'] {
+.auth-panel [role='alert'],
+.auth-loading {
   margin: 0;
-  color: #742537;
   font-weight: 700;
   text-align: center;
+}
+
+.auth-panel [role='status'],
+.auth-panel [role='alert'] {
+  color: #742537;
+}
+
+.auth-loading {
+  align-self: end;
+  margin-bottom: 8vh;
+  padding: 10px 16px;
+  border-radius: 999px;
+  color: #fff8e4;
+  background: rgb(24 10 30 / 70%);
 }
 
 @keyframes royal-live-light {
@@ -232,52 +230,60 @@
 }
 
 @keyframes royal-live-panel-in {
-  from { opacity: 0; transform: translateY(28px) scale(.985); }
+  from { opacity: 0; transform: translateY(24px) scale(.985); }
   to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes royal-logo-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-18px) scale(.98); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 }
 
 @media (max-width: 640px) {
   .auth-shell {
-    padding: 18px 12px;
+    padding: 14px 12px 14px;
     background-position: 50% center;
   }
 
-  .auth-panel {
-    padding: 25px 18px 19px;
-    border-radius: 16px;
+  .auth-logo {
+    top: 10px;
+    width: min(88vw, 480px);
+    max-height: 23vh;
   }
 
-  .auth-panel h1 {
-    font-size: clamp(2.35rem, 13vw, 3.7rem);
+  .auth-panel {
+    width: min(100%, 390px);
+    padding: 20px 16px 16px;
+    border-radius: 15px;
   }
 }
 
 @media (max-height: 760px) and (min-width: 641px) {
-  .auth-shell {
-    padding-block: 16px;
+  .auth-logo {
+    top: 8px;
+    width: min(38vw, 470px);
+    max-height: 23vh;
   }
 
   .auth-panel {
-    padding-block: 22px 18px;
-    gap: 9px;
-  }
-
-  .auth-panel h1 {
-    font-size: 3rem;
+    width: min(100%, 400px);
+    padding: 18px 22px 14px;
+    gap: 7px;
   }
 
   .auth-panel input {
-    min-height: 44px;
+    min-height: 40px;
   }
 
   .auth-panel .primary-action {
-    min-height: 48px;
+    min-height: 43px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .auth-shell::before,
   .auth-shell::after,
+  .auth-logo,
   .auth-panel {
     animation: none !important;
   }
