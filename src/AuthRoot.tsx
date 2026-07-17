@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { App } from './App';
+import royalStoryLogo from './assets/logo/royalstory-logo.png';
 import { OfflineReturnDialog } from './components/OfflineReturnDialog';
 import { ResetProgressDialog } from './components/ResetProgressDialog';
 import { authApi } from './game/api/authApi';
@@ -12,6 +13,10 @@ type AuthMode = 'sign-in' | 'sign-up' | 'forgot';
 const hasRecord = (value: Awaited<ReturnType<typeof playerApi.reset>>): value is Extract<typeof value, { record: PlayerApiRecord }> => (
   value.kind === 'loaded' || value.kind === 'saved' || value.kind === 'stale'
 );
+
+function AuthLogo() {
+  return <img className="auth-logo" src={royalStoryLogo} alt="RoyalStory" />;
+}
 
 export function AuthRoot() {
   const [recoveringPassword, setRecoveringPassword] = useState(() => window.location.pathname === '/reset-password');
@@ -130,10 +135,9 @@ export function AuthRoot() {
     const invalidRecovery = recoveryStatus === 'invalid-link' || recoveryStatus === 'recovery-failed';
     return (
       <main className="auth-shell">
+        <AuthLogo />
         <section className="auth-panel" aria-label="Choose a new RoyalStory password">
-          <p className="eyebrow">Milestone 6 · Account recovery</p>
-          <h1>RoyalStory</h1>
-          <h2>Choose a new password</h2>
+          <h1>Choose a new password</h1>
           {invalidRecovery ? (
             <>
               <p role="alert">This reset link is invalid or expired.</p>
@@ -167,15 +171,14 @@ export function AuthRoot() {
     );
   }
 
-  if (checking) return <main className="auth-shell"><p>Checking account session…</p></main>;
+  if (checking) return <main className="auth-shell"><AuthLogo /><p className="auth-loading">Checking account session…</p></main>;
 
   if (!record) {
     return (
       <main className="auth-shell">
+        <AuthLogo />
         <section className="auth-panel" aria-label="RoyalStory account">
-          <p className="eyebrow">Milestone 6 · Online save</p>
-          <h1>RoyalStory</h1>
-          <h2>{mode === 'sign-in' ? 'Sign in' : mode === 'sign-up' ? 'Create account' : 'Reset password'}</h2>
+          <h1>{mode === 'sign-in' ? 'Enter the Kingdom' : mode === 'sign-up' ? 'Create account' : 'Reset password'}</h1>
           <form onSubmit={submit}>
             <label>Email<input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>
             {mode !== 'forgot' ? (
