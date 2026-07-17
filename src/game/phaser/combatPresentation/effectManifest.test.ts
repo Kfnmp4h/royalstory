@@ -64,6 +64,22 @@ const EXPECTED_EFFECTS = {
 
 const readManifest = async () => (await import('./effectManifest')).COMBAT_EFFECT_MANIFEST;
 
+const readFrameSections = (source: string): readonly string[] => {
+  const matches = [...source.matchAll(/<!-- Frame \d+:[\s\S]*?(?=<!-- Frame \d+:|<\/svg>)/g)];
+  return matches.map((match) => match[0]);
+};
+
+const polygonXCoordinates = (section: string): readonly number[] =>
+  [...section.matchAll(/<polygon\b[^>]*\bpoints="([^"]+)"/g)].flatMap((match) =>
+    match[1].trim().split(/\s+/).map((point) => Number(point.split(',')[0])),
+  );
+
+const rectHorizontalBounds = (section: string): readonly Readonly<{ x: number; endX: number }>[] =>
+  [...section.matchAll(/<rect\b[^>]*\bx="(\d+)"[^>]*\bwidth="(\d+)"/g)].map((match) => ({
+    x: Number(match[1]),
+    endX: Number(match[1]) + Number(match[2]),
+  }));
+
 describe('COMBAT_EFFECT_MANIFEST', () => {
   it('defines every combat effect with its exact presentation metadata', async () => {
     const manifest = await readManifest();
@@ -87,6 +103,28 @@ describe('original combat effect sprite sheets', () => {
       expect(source).not.toMatch(/<(?:image|use)\b|(?:xlink:)?href\s*=/i);
       expect(root.match(/\bwidth="(\d+)"/)?.[1]).toBe(String(definition.frameWidth * definition.frameCount));
       expect(root.match(/\bheight="(\d+)"/)?.[1]).toBe(String(definition.frameHeight));
+    }));
+  });
+
+  it('keeps every primitive inside the horizontal bounds of its labelled frame', async () => {
+    await Promise.all(Object.values(EXPECTED_EFFECTS).map(async (definition) => {
+      const source = await readFile(join(projectRoot, 'public', definition.url), 'utf8');
+      const frames = readFrameSections(source);
+
+      expect(frames).toHaveLength(definition.frameCount);
+      frames.forEach((frame, index) => {
+        const startX = index * definition.frameWidth;
+        const endX = startX + definition.frameWidth;
+
+        for (const x of polygonXCoordinates(frame)) {
+          expect(x, `${definition.key} frame ${index + 1} polygon x`).toBeGreaterThanOrEqual(startX);
+          expect(x, `${definition.key} frame ${index + 1} polygon x`).toBeLessThan(endX);
+        }
+        for (const rect of rectHorizontalBounds(frame)) {
+          expect(rect.x, `${definition.key} frame ${index + 1} rect x`).toBeGreaterThanOrEqual(startX);
+          expect(rect.endX, `${definition.key} frame ${index + 1} rect end`).toBeLessThanOrEqual(endX);
+        }
+      });
     }));
   });
 });
