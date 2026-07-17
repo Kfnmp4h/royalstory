@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { CombatEvent } from '../types';
 import type {
   PhaserCombatEffectSprite,
   PhaserCombatFeedbackText,
   PhaserCombatPresentationPortOptions,
 } from './combatPresentation/PhaserCombatPresentationPort';
-import { createCombatBattlePresentationController } from './CombatBattleScene';
+import {
+  createCombatBattlePresentationController,
+  shouldAnimateLegacyCombatEvent,
+} from './CombatBattleScene';
 
 const createSprite = (): PhaserCombatEffectSprite => {
   let sprite: PhaserCombatEffectSprite;
@@ -66,5 +70,28 @@ describe('CombatBattleScene presentation runtime', () => {
     expect(options.createFeedbackText).toHaveBeenCalledWith('critical');
     expect(options.shake).toHaveBeenCalledWith(110, 0.0035);
     expect(options.renderHealth).toHaveBeenCalledWith('enemy', 0.16, 0.16);
+  });
+
+  it('suppresses only legacy feedback replaced by the presentation controller', () => {
+    const events: readonly CombatEvent[] = [
+      { type: 'attack', attacker: 'player', target: 'enemy' },
+      { type: 'damage', source: 'player', target: 'enemy', amount: 20 },
+      { type: 'critical', source: 'player', target: 'enemy' },
+      { type: 'miss', source: 'enemy', target: 'player' },
+      { type: 'death', actor: 'enemy' },
+      { type: 'death', actor: 'player' },
+      { type: 'respawn', actor: 'player' },
+    ];
+
+    expect(events.map((event) => shouldAnimateLegacyCombatEvent(event, true))).toEqual([
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+    ]);
+    expect(events.every((event) => shouldAnimateLegacyCombatEvent(event, false))).toBe(true);
   });
 });
