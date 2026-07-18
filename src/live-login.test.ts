@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const stylesheet = readFileSync(join(process.cwd(), 'src', 'live-login.css'), 'utf8');
+const entryPoint = readFileSync(join(process.cwd(), 'src', 'main.tsx'), 'utf8');
 
 function getBlock(source: string, header: string) {
   const pattern = header
@@ -40,6 +41,16 @@ describe('live login layout', () => {
     const shell = getBlock(stylesheet, '.auth-shell');
 
     expect(shell).toContain('grid-template-rows: 1fr auto;');
+  });
+
+  it('places the desktop panel in the shell bottom grid row', () => {
+    const panel = getBlock(stylesheet, '.auth-panel');
+
+    expect(panel).toContain('grid-row: 2;');
+  });
+
+  it('does not import the obsolete layout override', () => {
+    expect(entryPoint).not.toContain("import './live-layout-fix.css';");
   });
 
   it('scopes the desktop panel and control safe-area contract to their selectors', () => {
