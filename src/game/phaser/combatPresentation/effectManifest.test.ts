@@ -105,7 +105,7 @@ describe('raster combat effect sprite sheets', () => {
 describe('original combat effect sprite sheets', () => {
   it('keeps each local SVG sprite sheet attributable, self-contained, and dimensionally aligned', async () => {
     await Promise.all(Object.values(EXPECTED_EFFECTS).map(async (definition) => {
-      const path = join(projectRoot, 'public', definition.url);
+      const path = join(projectRoot, 'public', definition.url.replace('.png', '.svg'));
       const source = await readFile(path, 'utf8');
       const root = source.match(/<svg\b[^>]*>/i)?.[0] ?? '';
 
@@ -121,7 +121,7 @@ describe('original combat effect sprite sheets', () => {
 
   it('keeps every primitive inside the horizontal bounds of its labelled frame', async () => {
     await Promise.all(Object.values(EXPECTED_EFFECTS).map(async (definition) => {
-      const source = await readFile(join(projectRoot, 'public', definition.url), 'utf8');
+      const source = await readFile(join(projectRoot, 'public', definition.url.replace('.png', '.svg')), 'utf8');
       const frames = readFrameSections(source);
 
       expect(frames).toHaveLength(definition.frameCount);
