@@ -11,6 +11,10 @@ import {
   shouldCompleteEnemyPresentationDeath,
 } from './CombatBattleScene';
 
+vi.mock('phaser', () => ({
+  default: { Scene: class Scene {} },
+}));
+
 const createSprite = (): PhaserCombatEffectSprite => {
   let sprite: PhaserCombatEffectSprite;
   sprite = {
