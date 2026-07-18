@@ -60,6 +60,7 @@
   position: relative;
   display: grid;
   align-content: center;
+  grid-row: 2;
   justify-self: center;
   width: min(92vw, 410px);
   min-height: 520px;
