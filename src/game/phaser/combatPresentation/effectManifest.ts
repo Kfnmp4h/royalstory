@@ -20,7 +20,7 @@ export interface CombatEffectDefinition {
 export const COMBAT_EFFECT_MANIFEST = {
   'slash-basic': {
     key: 'slash-basic',
-    url: 'assets/combat/slash-basic.svg',
+    url: 'assets/combat/slash-basic.png',
     frameWidth: 48,
     frameHeight: 48,
     frameCount: 3,
@@ -31,7 +31,7 @@ export const COMBAT_EFFECT_MANIFEST = {
   },
   'impact-basic': {
     key: 'impact-basic',
-    url: 'assets/combat/impact-basic.svg',
+    url: 'assets/combat/impact-basic.png',
     frameWidth: 32,
     frameHeight: 32,
     frameCount: 3,
@@ -42,7 +42,7 @@ export const COMBAT_EFFECT_MANIFEST = {
   },
   'impact-critical': {
     key: 'impact-critical',
-    url: 'assets/combat/impact-critical.svg',
+    url: 'assets/combat/impact-critical.png',
     frameWidth: 48,
     frameHeight: 48,
     frameCount: 4,
@@ -53,7 +53,7 @@ export const COMBAT_EFFECT_MANIFEST = {
   },
   'enemy-death': {
     key: 'enemy-death',
-    url: 'assets/combat/enemy-death.svg',
+    url: 'assets/combat/enemy-death.png',
     frameWidth: 48,
     frameHeight: 48,
     frameCount: 4,
@@ -64,7 +64,7 @@ export const COMBAT_EFFECT_MANIFEST = {
   },
   'death-particles': {
     key: 'death-particles',
-    url: 'assets/combat/death-particles.svg',
+    url: 'assets/combat/death-particles.png',
     frameWidth: 32,
     frameHeight: 32,
     frameCount: 4,
