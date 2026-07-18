@@ -36,6 +36,12 @@ describe('live login layout', () => {
     expect(stylesheet).toContain('@media (max-height: 760px) and (min-width: 641px)');
   });
 
+  it('scopes the shell grid layout to the shell selector', () => {
+    const shell = getBlock(stylesheet, '.auth-shell');
+
+    expect(shell).toContain('grid-template-rows: 1fr auto;');
+  });
+
   it('scopes the desktop panel and control safe-area contract to their selectors', () => {
     const panel = getBlock(stylesheet, '.auth-panel');
     const controls = getBlock(stylesheet, '.auth-panel input,\n.auth-panel .primary-action');
@@ -45,6 +51,7 @@ describe('live login layout', () => {
     expect(panel).toContain('min-height: 520px;');
     expect(panel).toContain('max-width: 100%;');
     expect(panel).toContain('box-sizing: border-box;');
+    expect(panel).toContain('gap: 10px;');
     expect(panel).toContain('padding: 112px 58px 78px;');
     expect(controls).toContain('max-width: 100%;');
     expect(controls).toContain('box-sizing: border-box;');
@@ -52,8 +59,11 @@ describe('live login layout', () => {
 
   it('scopes the mobile panel safe-area values to the mobile media query', () => {
     const mobileRules = getBlock(stylesheet, '@media (max-width: 640px)');
+    const shell = getBlock(mobileRules, '.auth-shell');
     const panel = getBlock(mobileRules, '.auth-panel');
 
+    expect(shell).toContain('padding: 14px 10px 12px;');
+    expect(shell).toContain('background-position: 50% center;');
     expect(panel).toContain('width: min(94vw, 370px);');
     expect(panel).toContain('min-height: 500px;');
     expect(panel).toContain('padding: 104px 48px 76px;');
