@@ -3,11 +3,12 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const projectRoot = process.cwd();
+const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 
 const EXPECTED_EFFECTS = {
   'slash-basic': {
     key: 'slash-basic',
-    url: 'assets/combat/slash-basic.svg',
+    url: 'assets/combat/slash-basic.png',
     frameWidth: 48,
     frameHeight: 48,
     frameCount: 3,
@@ -18,7 +19,7 @@ const EXPECTED_EFFECTS = {
   },
   'impact-basic': {
     key: 'impact-basic',
-    url: 'assets/combat/impact-basic.svg',
+    url: 'assets/combat/impact-basic.png',
     frameWidth: 32,
     frameHeight: 32,
     frameCount: 3,
@@ -29,7 +30,7 @@ const EXPECTED_EFFECTS = {
   },
   'impact-critical': {
     key: 'impact-critical',
-    url: 'assets/combat/impact-critical.svg',
+    url: 'assets/combat/impact-critical.png',
     frameWidth: 48,
     frameHeight: 48,
     frameCount: 4,
@@ -40,7 +41,7 @@ const EXPECTED_EFFECTS = {
   },
   'enemy-death': {
     key: 'enemy-death',
-    url: 'assets/combat/enemy-death.svg',
+    url: 'assets/combat/enemy-death.png',
     frameWidth: 48,
     frameHeight: 48,
     frameCount: 4,
@@ -51,7 +52,7 @@ const EXPECTED_EFFECTS = {
   },
   'death-particles': {
     key: 'death-particles',
-    url: 'assets/combat/death-particles.svg',
+    url: 'assets/combat/death-particles.png',
     frameWidth: 32,
     frameHeight: 32,
     frameCount: 4,
@@ -86,6 +87,18 @@ describe('COMBAT_EFFECT_MANIFEST', () => {
 
     expect(Object.keys(manifest).sort()).toEqual(Object.keys(EXPECTED_EFFECTS).sort());
     expect(manifest).toEqual(EXPECTED_EFFECTS);
+  });
+});
+
+describe('raster combat effect sprite sheets', () => {
+  it('ships every manifest effect as a Phaser-loadable PNG sprite sheet', async () => {
+    await Promise.all(Object.values(EXPECTED_EFFECTS).map(async (definition) => {
+      const bytes = await readFile(join(projectRoot, 'public', definition.url));
+
+      expect(bytes.subarray(0, PNG_SIGNATURE.length)).toEqual(PNG_SIGNATURE);
+      expect(bytes.readUInt32BE(16)).toBe(definition.frameWidth * definition.frameCount);
+      expect(bytes.readUInt32BE(20)).toBe(definition.frameHeight);
+    }));
   });
 });
 
