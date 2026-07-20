@@ -1,48 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { EquipmentTab } from './components/EquipmentTab';
 import { playerApi } from './game/api/playerApi';
+import type { CampaignMode } from './game/campaign/campaignTypes';
 import { createBattleGame } from './game/phaser/battleGame';
 import type { BattleController, BattleStatus } from './game/phaser/battleGame';
-import type { CampaignMode } from './game/campaign/campaignTypes';
-import { compareItems } from './game/equipment/equipmentPower';
-import {
-  EQUIPMENT_SLOTS,
-  type EquipmentItem,
-  type EquipmentRarity,
-  type EquipmentStatKey,
-} from './game/equipment/equipmentTypes';
 import type { PlayerApiRecord, PlayerApiResponse, PlayerCommand } from './game/save/saveTypes';
 import { subscribeToVisibility } from './game/visibilityController';
-
-const rarityClass: Record<EquipmentRarity, string> = {
-  Normal: 'rarity-normal',
-  Rare: 'rarity-rare',
-  Epic: 'rarity-epic',
-  Unique: 'rarity-unique',
-  Legendary: 'rarity-legendary',
-};
-
-const statLabels: Record<EquipmentStatKey, string> = {
-  attack: 'ATK',
-  maxHp: 'Max HP',
-  defense: 'Defense',
-  accuracy: 'Accuracy',
-  evasion: 'Evasion',
-  criticalRate: 'Critical Rate',
-  criticalDamage: 'Critical Damage',
-  attackSpeed: 'Attack Speed',
-  damage: 'Damage',
-  bossDamage: 'Boss Monster Damage',
-  normalDamage: 'Normal Monster Damage',
-};
-
-const percentageStats = new Set<EquipmentStatKey>([
-  'criticalRate',
-  'criticalDamage',
-  'attackSpeed',
-  'damage',
-  'bossDamage',
-  'normalDamage',
-]);
 
 interface AppProps {
   readonly record: PlayerApiRecord;
@@ -50,15 +13,7 @@ interface AppProps {
   readonly initialNotice?: string | null;
 }
 
-function EquipmentSummary({ item }: { item: EquipmentItem }) {
-  return (
-    <>
-      <span className="item-rarity">{item.rarity}</span>
-      <strong>{item.name}</strong>
-      <span>Level {item.level} · Power {item.power}</span>
-    </>
-  );
-}
+type AppTab = 'battle' | 'equipment';
 
 const campaignMessages: Record<Exclude<CampaignMode, 'farming'>, { status: string; instruction: string }> = {
   breakthrough: {
@@ -92,6 +47,9 @@ export function App({ record, onRecordChange, initialNotice = null }: AppProps) 
   const commandInFlightRef = useRef(false);
   const previousLevelRef = useRef<number | null>(null);
   const previousDropIdRef = useRef<string | null>(null);
+  const battleTabRef = useRef<HTMLButtonElement>(null);
+  const equipmentTabRef = useRef<HTMLButtonElement>(null);
+  const [activeTab, setActiveTab] = useState<AppTab>('battle');
   const [status, setStatus] = useState<BattleStatus | null>(null);
   const [visibilityState, setVisibilityState] = useState<BattleStatus['state'] | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -186,6 +144,20 @@ export function App({ record, onRecordChange, initialNotice = null }: AppProps) 
     return () => window.clearTimeout(timer);
   }, [status?.snapshot.equipment.latestDrop]);
 
+  const selectTab = (tab: AppTab, moveFocus = false) => {
+    setActiveTab(tab);
+    if (moveFocus) {
+      const target = tab === 'battle' ? battleTabRef.current : equipmentTabRef.current;
+      target?.focus();
+    }
+  };
+
+  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    selectTab(activeTab === 'battle' ? 'equipment' : 'battle', true);
+  };
+
   const statusLabel = error
     ? 'Error'
     : serverBusy
@@ -199,10 +171,6 @@ export function App({ record, onRecordChange, initialNotice = null }: AppProps) 
   const combat = snapshot?.combat;
   const progression = snapshot?.progression;
   const equipment = snapshot?.equipment;
-  const selectedItem = equipment?.inventory.find((item) => item.id === selectedItemId) ?? null;
-  const comparison = selectedItem && equipment
-    ? compareItems(selectedItem, equipment.equipped[selectedItem.slot])
-    : null;
   const isMaxLevel = progression?.level === 200;
   const campaignMessage = snapshot
     ? snapshot.mode === 'farming'
@@ -220,207 +188,157 @@ export function App({ record, onRecordChange, initialNotice = null }: AppProps) 
         <p>Gold: {record.state.gold}</p>
         {serverNotice ? <p role="status">{serverNotice}</p> : null}
       </header>
-      <section className="campaign-panel" aria-label="Campaign progress">
-        {snapshot && campaignMessage ? (
-          <>
-            <p className="campaign-chapter">Chapter {snapshot.chapter.number} / 36</p>
-            <h2>{snapshot.chapter.name}</h2>
-            <p className="campaign-status">{campaignMessage.status}</p>
-            <p className="campaign-instruction">{campaignMessage.instruction}</p>
-            {snapshot.mode === 'farming' ? (
-              snapshot.bossUnlocked ? (
-                <button
-                  type="button"
-                  disabled={serverBusy}
-                  onClick={() => void issueCommand({ type: 'startBoss', expectedVersion: record.saveVersion })}
-                >
-                  Challenge boss
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  disabled={serverBusy}
-                  onClick={() => void issueCommand({ type: 'startBreakthrough', expectedVersion: record.saveVersion })}
-                >
-                  Start breakthrough
-                </button>
-              )
-            ) : null}
-          </>
-        ) : <p>Loading campaign progress…</p>}
-      </section>
-      <section className="hero-panel" aria-label="Hero progression">
-        {progression ? (
-          <>
-            <div className="hero-level-row">
-              <p>Level {progression.level} / 200</p>
-              <p>{isMaxLevel ? 'MAX' : `${progression.xp} / ${progression.xpToNextLevel} XP`}</p>
-            </div>
-            <progress
-              aria-label="Experience"
-              max={isMaxLevel ? 1 : progression.xpToNextLevel}
-              value={isMaxLevel ? 1 : progression.xp}
-            />
-            <dl className="hero-stats">
-              <div>
-                <dt>ATK</dt>
-                <dd>{equipment?.effectiveStats.attack ?? progression.stats.attack}</dd>
-              </div>
-              <div>
-                <dt>DEF</dt>
-                <dd>{equipment?.effectiveStats.defense ?? progression.stats.defense}</dd>
-              </div>
-              <div>
-                <dt>HP</dt>
-                <dd>{equipment?.effectiveStats.maxHp ?? progression.stats.maxHp}</dd>
-              </div>
-              <div>
-                <dt>Total Power</dt>
-                <dd>{equipment?.heroPower ?? 0}</dd>
-              </div>
-            </dl>
-            {levelUpMessage ? <p className="level-up-message" role="status">{levelUpMessage}</p> : null}
-          </>
-        ) : <p>Loading hero progression…</p>}
-      </section>
-      <section className="equipment-panel" aria-label="Equipment">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Ari's loadout</p>
-            <h2>Equipment</h2>
-          </div>
-          <p>{equipment ? `${equipment.inventory.length} items ready` : 'Waiting for battle drops'}</p>
+
+      <nav className="primary-tabs" aria-label="Game sections">
+        <div role="tablist" aria-label="RoyalStory navigation">
+          <button
+            ref={battleTabRef}
+            id="battle-tab"
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'battle'}
+            aria-controls="battle-panel"
+            tabIndex={activeTab === 'battle' ? 0 : -1}
+            onClick={() => selectTab('battle')}
+            onKeyDown={handleTabKeyDown}
+          >
+            Battle
+          </button>
+          <button
+            ref={equipmentTabRef}
+            id="equipment-tab"
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'equipment'}
+            aria-controls="equipment-panel"
+            tabIndex={activeTab === 'equipment' ? 0 : -1}
+            onClick={() => selectTab('equipment')}
+            onKeyDown={handleTabKeyDown}
+          >
+            Equipment
+          </button>
         </div>
-        {equipment ? (
-          <>
-            <div className="equipment-stage">
-              <div className="ari-medallion" aria-label="Ari">
-                <span className="ari-crown" aria-hidden="true">♛</span>
-                <strong>Ari</strong>
-                <span>Level {progression?.level ?? 1}</span>
-                <span>{equipment.heroPower} Power</span>
-              </div>
-              {EQUIPMENT_SLOTS.map((slot) => {
-                const item = equipment.equipped[slot];
-                return (
-                  <div
-                    key={slot}
-                    className={`equipment-slot ${item ? rarityClass[item.rarity] : 'is-empty'}`}
-                    data-slot={slot}
-                    role="group"
-                    aria-label={`${slot} equipment slot`}
+      </nav>
+
+      <div
+        id="battle-panel"
+        className="tab-panel"
+        role="tabpanel"
+        aria-labelledby="battle-tab"
+        hidden={activeTab !== 'battle'}
+      >
+        <section className="campaign-panel" aria-label="Campaign progress">
+          {snapshot && campaignMessage ? (
+            <>
+              <p className="campaign-chapter">Chapter {snapshot.chapter.number} / 36</p>
+              <h2>{snapshot.chapter.name}</h2>
+              <p className="campaign-status">{campaignMessage.status}</p>
+              <p className="campaign-instruction">{campaignMessage.instruction}</p>
+              {snapshot.mode === 'farming' ? (
+                snapshot.bossUnlocked ? (
+                  <button
+                    type="button"
+                    disabled={serverBusy}
+                    onClick={() => void issueCommand({ type: 'startBoss', expectedVersion: record.saveVersion })}
                   >
-                    <span className="slot-name">{slot}</span>
-                    {item ? <EquipmentSummary item={item} /> : <span className="empty-label">Empty</span>}
-                  </div>
-                );
-              })}
-            </div>
-            <button
-              className="primary-action equip-best"
-              type="button"
-              disabled={serverBusy}
-              onClick={() => void issueCommand({ type: 'equipBest', expectedVersion: record.saveVersion })}
-            >
-              Equip Best
-            </button>
-
-            <section className="inventory-panel" aria-label="Inventory">
-              <div className="inventory-heading">
-                <h3>Inventory</h3>
-                <span>Sorted by power</span>
+                    Challenge boss
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={serverBusy}
+                    onClick={() => void issueCommand({ type: 'startBreakthrough', expectedVersion: record.saveVersion })}
+                  >
+                    Start breakthrough
+                  </button>
+                )
+              ) : null}
+            </>
+          ) : <p>Loading campaign progress…</p>}
+        </section>
+        <section className="hero-panel" aria-label="Hero progression">
+          {progression ? (
+            <>
+              <div className="hero-level-row">
+                <p>Level {progression.level} / 200</p>
+                <p>{isMaxLevel ? 'MAX' : `${progression.xp} / ${progression.xpToNextLevel} XP`}</p>
               </div>
-              {equipment.inventory.length > 0 ? (
-                <div className="inventory-grid">
-                  {equipment.inventory.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      className={`inventory-item ${rarityClass[item.rarity]} ${selectedItemId === item.id ? 'is-selected' : ''}`}
-                      aria-label={`${item.name}, level ${item.level}, Power ${item.power}`}
-                      aria-pressed={selectedItemId === item.id}
-                      onClick={() => setSelectedItemId(item.id)}
-                    >
-                      <EquipmentSummary item={item} />
-                    </button>
-                  ))}
-                </div>
-              ) : <p className="empty-inventory">Defeat monsters to find equipment.</p>}
-            </section>
-
-            {comparison ? (
-              <aside className={`comparison-panel comparison-${comparison.result}`} aria-label="Item comparison">
+              <progress
+                aria-label="Experience"
+                max={isMaxLevel ? 1 : progression.xpToNextLevel}
+                value={isMaxLevel ? 1 : progression.xp}
+              />
+              <dl className="hero-stats">
                 <div>
-                  <p className="comparison-result">
-                    {comparison.result === 'positive'
-                      ? `Upgrade +${comparison.powerDelta} power`
-                      : comparison.result === 'negative'
-                        ? `Downgrade ${comparison.powerDelta} power`
-                        : 'Equal 0 power'}
-                  </p>
-                  <h3>{comparison.selected.name}</h3>
-                  <p>Compared with {comparison.equipped?.name ?? `empty ${comparison.selected.slot}`}</p>
+                  <dt>ATK</dt>
+                  <dd>{equipment?.effectiveStats.attack ?? progression.stats.attack}</dd>
                 </div>
-                <dl className="comparison-stats">
-                  {Object.entries(comparison.statDeltas)
-                    .filter(([, value]) => value !== 0)
-                    .map(([stat, value]) => {
-                      const key = stat as EquipmentStatKey;
-                      return (
-                        <div key={key}>
-                          <dt>{statLabels[key]}</dt>
-                          <dd>{value > 0 ? '+' : ''}{value}{percentageStats.has(key) ? '%' : ''}</dd>
-                        </div>
-                      );
-                    })}
-                </dl>
-                <button
-                  className="primary-action"
-                  type="button"
-                  disabled={serverBusy}
-                  onClick={() => void issueCommand({
-                    type: 'equip',
-                    expectedVersion: record.saveVersion,
-                    itemId: comparison.selected.id,
-                  })}
-                >
-                  Equip selected
-                </button>
-              </aside>
-            ) : null}
-          </>
-        ) : <p>Loading equipment…</p>}
-        {dropMessage ? (
-          <p className="drop-message" role="status" aria-label="Latest equipment drop" aria-live="polite">
-            {dropMessage}
-          </p>
-        ) : null}
-      </section>
-      <section className="battle-card" aria-label="Automatic battle">
-        <div
-          ref={hostRef}
-          className="battle-host"
-          aria-label="RoyalStory automatic battle"
+                <div>
+                  <dt>DEF</dt>
+                  <dd>{equipment?.effectiveStats.defense ?? progression.stats.defense}</dd>
+                </div>
+                <div>
+                  <dt>HP</dt>
+                  <dd>{equipment?.effectiveStats.maxHp ?? progression.stats.maxHp}</dd>
+                </div>
+                <div>
+                  <dt>Total Power</dt>
+                  <dd>{equipment?.heroPower ?? 0}</dd>
+                </div>
+              </dl>
+              {levelUpMessage ? <p className="level-up-message" role="status">{levelUpMessage}</p> : null}
+            </>
+          ) : <p>Loading hero progression…</p>}
+        </section>
+        <section className="battle-card" aria-label="Automatic battle">
+          <div
+            ref={hostRef}
+            className="battle-host"
+            aria-label="RoyalStory automatic battle"
+          />
+        </section>
+        <section className="diagnostics" aria-label="Combat diagnostics">
+          <p className="status-chip">{statusLabel}</p>
+          <dl>
+            <div>
+              <dt>Active runtime</dt>
+              <dd>{formatRuntime(combat?.activeRuntimeMs ?? 0)}</dd>
+            </div>
+            <div>
+              <dt>Total attacks</dt>
+              <dd>{combat?.totalAttacks ?? 0}</dd>
+            </div>
+            <div>
+              <dt>Defeated enemies</dt>
+              <dd>{combat?.defeatedEnemies ?? 0}</dd>
+            </div>
+          </dl>
+          {error ? <p role="alert">{error.message}</p> : null}
+        </section>
+      </div>
+
+      <div
+        id="equipment-panel"
+        className="tab-panel"
+        role="tabpanel"
+        aria-labelledby="equipment-tab"
+        hidden={activeTab !== 'equipment'}
+      >
+        <EquipmentTab
+          equipment={equipment}
+          heroLevel={progression?.level ?? 1}
+          selectedItemId={selectedItemId}
+          dropMessage={dropMessage}
+          serverBusy={serverBusy}
+          onSelectItem={setSelectedItemId}
+          onEquipBest={() => void issueCommand({ type: 'equipBest', expectedVersion: record.saveVersion })}
+          onEquip={(itemId) => void issueCommand({
+            type: 'equip',
+            expectedVersion: record.saveVersion,
+            itemId,
+          })}
         />
-      </section>
-      <section className="diagnostics" aria-label="Combat diagnostics">
-        <p className="status-chip">{statusLabel}</p>
-        <dl>
-          <div>
-            <dt>Active runtime</dt>
-            <dd>{formatRuntime(combat?.activeRuntimeMs ?? 0)}</dd>
-          </div>
-          <div>
-            <dt>Total attacks</dt>
-            <dd>{combat?.totalAttacks ?? 0}</dd>
-          </div>
-          <div>
-            <dt>Defeated enemies</dt>
-            <dd>{combat?.defeatedEnemies ?? 0}</dd>
-          </div>
-        </dl>
-        {error ? <p role="alert">{error.message}</p> : null}
-      </section>
+      </div>
     </main>
   );
 }
