@@ -4,6 +4,7 @@ import { createEquipmentController } from '../equipment/equipmentController';
 import type { CombatPresentationEvent } from '../presentation/combatPresentationEvents';
 import { createProgressionController } from '../progression/progressionController';
 import type { CombatEngine, CombatEvent, CombatSnapshot } from '../types';
+import { createCampaignCombatRandom } from './campaignCombatRandom';
 import { CHAPTERS, getChapter } from './campaignDefinitions';
 import type {
   CampaignControllerOptions,
@@ -107,7 +108,11 @@ export const createCampaignController = (
         maxHp: profile.maxHp,
       },
     }, {
-      random: options.combatRandom ?? Math.random,
+      random: options.combatRandom ?? createCampaignCombatRandom(
+        chapter.number,
+        nextMode,
+        restoredCombat?.totalAttacks ?? 0,
+      ),
       monsterDamageKind: definition.kind === 'boss' ? 'boss' : 'normal',
       initialState: restoredCombat ?? undefined,
     });
