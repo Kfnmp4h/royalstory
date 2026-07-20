@@ -55,11 +55,11 @@ export interface CampaignController {
   startBoss(): void;
   equip(itemId: string): void;
   equipBest(): void;
-  dismantle(itemId: string): DismantleResult;
   getSnapshot(): CampaignSnapshot;
   getPersistentState?(): CampaignPersistentState;
 }
 
 export interface PersistentCampaignController extends CampaignController {
+  dismantle(itemId: string): DismantleResult;
   getPersistentState(): CampaignPersistentState;
 }
