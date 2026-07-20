@@ -15,6 +15,11 @@ interface AppProps {
 
 type AppTab = 'battle' | 'equipment';
 
+interface BackgroundSyncRequest {
+  readonly controller: AbortController;
+  readonly requestId: number;
+}
+
 const campaignMessages: Record<Exclude<CampaignMode, 'farming'>, { status: string; instruction: string }> = {
   breakthrough: {
     status: 'Breakthrough',
@@ -45,7 +50,9 @@ export function App({ record, onRecordChange, initialNotice = null }: AppProps) 
   const hostRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<BattleController | null>(null);
   const mountedCampaignRef = useRef<CampaignPersistentState | null>(null);
-  const commandInFlightRef = useRef(false);
+  const foregroundCommandInFlightRef = useRef(false);
+  const backgroundSyncRef = useRef<BackgroundSyncRequest | null>(null);
+  const nextBackgroundSyncIdRef = useRef(1);
   const previousLevelRef = useRef<number | null>(null);
   const previousDropIdRef = useRef<string | null>(null);
   const battleTabRef = useRef<HTMLButtonElement>(null);
@@ -84,6 +91,8 @@ export function App({ record, onRecordChange, initialNotice = null }: AppProps) 
 
     return () => {
       active = false;
+      backgroundSyncRef.current?.controller.abort();
+      backgroundSyncRef.current = null;
       controller.destroy();
       if (controllerRef.current === controller) controllerRef.current = null;
       mountedCampaignRef.current = null;
@@ -102,11 +111,7 @@ export function App({ record, onRecordChange, initialNotice = null }: AppProps) 
     setVisibilityState((current) => hidden ? 'paused' : current === 'paused' ? 'running' : null);
   }), []);
 
-  const issueCommand = useCallback(async (command: PlayerCommand) => {
-    if (commandInFlightRef.current) return;
-    commandInFlightRef.current = true;
-    setServerBusy(true);
-    const response = await playerApi.command(command);
+  const handleCommandResponse = useCallback((response: PlayerApiResponse, command: PlayerCommand) => {
     if (hasRecord(response)) {
       onRecordChange(response.record);
       if (response.kind === 'stale') {
@@ -127,16 +132,46 @@ export function App({ record, onRecordChange, initialNotice = null }: AppProps) 
     } else {
       setError(new Error(response.message));
     }
-    setServerBusy(false);
-    commandInFlightRef.current = false;
   }, [onRecordChange]);
+
+  const issueCommand = useCallback(async (command: PlayerCommand) => {
+    if (foregroundCommandInFlightRef.current) return;
+    foregroundCommandInFlightRef.current = true;
+    backgroundSyncRef.current?.controller.abort();
+    backgroundSyncRef.current = null;
+    setServerBusy(true);
+    try {
+      const response = await playerApi.command(command);
+      handleCommandResponse(response, command);
+    } finally {
+      setServerBusy(false);
+      foregroundCommandInFlightRef.current = false;
+    }
+  }, [handleCommandResponse]);
+
+  const issueBackgroundSync = useCallback(async (expectedVersion: number) => {
+    if (foregroundCommandInFlightRef.current || backgroundSyncRef.current) return;
+    const controller = new AbortController();
+    const requestId = nextBackgroundSyncIdRef.current;
+    nextBackgroundSyncIdRef.current += 1;
+    backgroundSyncRef.current = { controller, requestId };
+    const command: PlayerCommand = { type: 'sync', expectedVersion };
+
+    try {
+      const response = await playerApi.command(command, controller.signal);
+      if (controller.signal.aborted || backgroundSyncRef.current?.requestId !== requestId) return;
+      handleCommandResponse(response, command);
+    } finally {
+      if (backgroundSyncRef.current?.requestId === requestId) backgroundSyncRef.current = null;
+    }
+  }, [handleCommandResponse]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      void issueCommand({ type: 'sync', expectedVersion: record.saveVersion });
+      void issueBackgroundSync(record.saveVersion);
     }, 15_000);
     return () => window.clearInterval(timer);
-  }, [issueCommand, record.saveVersion]);
+  }, [issueBackgroundSync, record.saveVersion]);
 
   useEffect(() => {
     const level = status?.snapshot.progression.level;
