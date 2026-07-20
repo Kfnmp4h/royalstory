@@ -9,6 +9,24 @@ interface ReplaceableBattleScene {
   renderAndPublish(snapshot: CampaignSnapshot): void;
 }
 
+interface CampaignProgressMarker {
+  readonly chapterNumber: number;
+  readonly bossUnlocked: boolean;
+}
+
+export const shouldReplaceBattleState = (
+  local: CampaignProgressMarker,
+  incoming: CampaignProgressMarker,
+): boolean => {
+  if (incoming.chapterNumber < local.chapterNumber) return false;
+  if (
+    incoming.chapterNumber === local.chapterNumber
+    && local.bossUnlocked
+    && !incoming.bossUnlocked
+  ) return false;
+  return true;
+};
+
 export interface BattleController {
   setPaused(paused: boolean): void;
   startBreakthrough(): void;
@@ -78,6 +96,11 @@ export function createBattleGame({
     },
     replaceState(state) {
       if (destroyed) return;
+      const current = replaceableScene.campaign.getSnapshot();
+      if (!shouldReplaceBattleState(
+        { chapterNumber: current.chapter.number, bossUnlocked: current.bossUnlocked },
+        { chapterNumber: state.chapterNumber, bossUnlocked: state.bossUnlocked },
+      )) return;
       const campaign = createCampaignController(undefined, { initialState: state });
       replaceableScene.campaign = campaign;
       replaceableScene.renderAndPublish(campaign.getSnapshot());
