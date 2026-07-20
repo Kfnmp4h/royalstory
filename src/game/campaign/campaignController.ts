@@ -240,6 +240,7 @@ export const createCampaignController = (
       applyEquipmentProfile();
     },
     dismantle: (itemId: string) => equipment.dismantle(itemId),
+    dismantleLowerPower: () => equipment.dismantleLowerPower(),
     getSnapshot,
     getPersistentState,
   };
