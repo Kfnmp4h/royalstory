@@ -114,6 +114,9 @@ export function App({ record, onRecordChange, initialNotice = null }: AppProps) 
       } else if (response.kind === 'saved' && command.type === 'dismantle') {
         setSelectedItemId(null);
         setServerNotice(`Equipment dismantled. Armor Stones: ${response.record.state.armorStones}.`);
+      } else if (response.kind === 'saved' && command.type === 'dismantleLowerPower') {
+        setSelectedItemId(null);
+        setServerNotice(`Lower-power equipment dismantled. Armor Stones: ${response.record.state.armorStones}.`);
       } else if ('offline' in response && response.offline && response.offline.kills > 0) {
         setServerNotice(
           `Offline rewards: ${response.offline.gold} gold, ${response.offline.xp} XP, ${response.offline.drops.length} drops.`,
@@ -356,6 +359,10 @@ export function App({ record, onRecordChange, initialNotice = null }: AppProps) 
             type: 'dismantle',
             expectedVersion: record.saveVersion,
             itemId,
+          })}
+          onDismantleLowerPower={() => void issueCommand({
+            type: 'dismantleLowerPower',
+            expectedVersion: record.saveVersion,
           })}
         />
       </div>
