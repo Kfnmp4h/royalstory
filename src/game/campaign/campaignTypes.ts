@@ -1,5 +1,5 @@
 import type { CombatEvent, CombatSnapshot, CombatBalance } from '../types';
-import type { EquipmentSnapshot, RandomSource } from '../equipment/equipmentTypes';
+import type { DismantleResult, EquipmentSnapshot, RandomSource } from '../equipment/equipmentTypes';
 import type { CombatPresentationEvent } from '../presentation/combatPresentationEvents';
 import type { ProgressionSnapshot } from '../progression/progressionTypes';
 import type { CampaignPersistentState } from '../save/saveTypes';
@@ -55,6 +55,7 @@ export interface CampaignController {
   startBoss(): void;
   equip(itemId: string): void;
   equipBest(): void;
+  dismantle(itemId: string): DismantleResult;
   getSnapshot(): CampaignSnapshot;
   getPersistentState?(): CampaignPersistentState;
 }
