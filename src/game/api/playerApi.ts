@@ -1,3 +1,4 @@
+import { applyActiveBattleState } from '../phaser/battleStateBridge';
 import type { PlayerApiResponse, PlayerCommand } from '../save/saveTypes';
 
 const unavailable = (): PlayerApiResponse => ({
@@ -34,14 +35,21 @@ const sendCommand = (command: PlayerCommand, signal?: AbortSignal) => request('/
   signal,
 });
 
+const applyCommandResponse = (response: PlayerApiResponse): PlayerApiResponse => {
+  if (response.kind === 'loaded' || response.kind === 'saved' || response.kind === 'stale') {
+    applyActiveBattleState(response.record.state.campaign);
+  }
+  return response;
+};
+
 const command = async (commandToSend: PlayerCommand, signal?: AbortSignal): Promise<PlayerApiResponse> => {
   const response = await sendCommand(commandToSend, signal);
-  if (commandToSend.type === 'sync' || response.kind !== 'stale') return response;
+  if (commandToSend.type === 'sync' || response.kind !== 'stale') return applyCommandResponse(response);
 
-  return sendCommand({
+  return applyCommandResponse(await sendCommand({
     ...commandToSend,
     expectedVersion: response.record.saveVersion,
-  }, signal);
+  }, signal));
 };
 
 export const playerApi = Object.freeze({
