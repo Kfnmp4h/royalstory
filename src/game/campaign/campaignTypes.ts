@@ -1,5 +1,10 @@
 import type { CombatEvent, CombatSnapshot, CombatBalance } from '../types';
-import type { DismantleResult, EquipmentSnapshot, RandomSource } from '../equipment/equipmentTypes';
+import type {
+  DismantleResult,
+  EquipmentSnapshot,
+  MassDismantleResult,
+  RandomSource,
+} from '../equipment/equipmentTypes';
 import type { CombatPresentationEvent } from '../presentation/combatPresentationEvents';
 import type { ProgressionSnapshot } from '../progression/progressionTypes';
 import type { CampaignPersistentState } from '../save/saveTypes';
@@ -61,5 +66,6 @@ export interface CampaignController {
 
 export interface PersistentCampaignController extends CampaignController {
   dismantle(itemId: string): DismantleResult;
+  dismantleLowerPower(): MassDismantleResult;
   getPersistentState(): CampaignPersistentState;
 }
