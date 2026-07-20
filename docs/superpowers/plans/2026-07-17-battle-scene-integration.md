@@ -29,12 +29,12 @@
 - Consumes: `CampaignController.advance(elapsedMs)`, `CampaignController.consumePresentationEvents()`, `CampaignController.getSnapshot()`.
 - Produces: `advanceCombatPresentationFrame(campaign, presentation, elapsedMs)` returning the existing gameplay events and Campaign snapshot.
 
-- [ ] **Step 1: Write the failing test** proving Campaign advances once, presentation events are consumed once, controller receives them once, presentation time advances once, and the existing gameplay events/snapshot are returned unchanged.
-- [ ] **Step 2: Verify RED** with `pnpm test src/game/phaser/combatPresentation/advanceCombatPresentationFrame.test.ts`; expected failure is unresolved module/export.
-- [ ] **Step 3: Implement the smallest pure coordinator** with no Phaser dependency.
-- [ ] **Step 4: Replace only the corresponding calls in `BattleScene.update`** while preserving render order and legacy animation behavior.
-- [ ] **Step 5: Verify GREEN** with the focused test, full tests, typecheck, build, and Vercel Production.
-- [ ] **Step 6: Commit** as `feat: coordinate battle presentation frames`.
+- [x] **Step 1: Write the failing test** proving Campaign advances once, presentation events are consumed once, controller receives them once, presentation time advances once, and the existing gameplay events/snapshot are returned unchanged.
+- [x] **Step 2: Verify RED** with `pnpm test src/game/phaser/combatPresentation/advanceCombatPresentationFrame.test.ts`; expected failure is unresolved module/export.
+- [x] **Step 3: Implement the smallest pure coordinator** with no Phaser dependency.
+- [x] **Step 4: Replace only the corresponding calls in `BattleScene.update`** while preserving render order and legacy animation behavior.
+- [x] **Step 5: Verify GREEN** with the focused test, full tests, typecheck, build, and Vercel Production.
+- [x] **Step 6: Commit** as `feat: coordinate battle presentation frames`.
 
 ### Task 2: Create the Phaser presentation port
 
@@ -47,10 +47,10 @@
 - Consumes: `CombatPresentationPort`, actor containers, registered effect animations, camera, tweens, and health graphics.
 - Produces: a port implementing effect lookup/playback, fallback flash, pooled text handles, health rendering, shake, death completion, and missing-effect warnings.
 
-- [ ] **Step 1: RED-test one port behavior at a time**, beginning with effect lookup and playback placement.
-- [ ] **Step 2: Implement only the tested behavior**, then verify focused/full tests and build.
-- [ ] **Step 3: Instantiate `CombatPresentationController` in `CombatBattleScene.create`** after animation registration and before `super.create()`.
-- [ ] **Step 4: Commit** each independently verified port behavior separately.
+- [x] **Step 1: RED-test one port behavior at a time**, beginning with effect lookup and playback placement.
+- [x] **Step 2: Implement only the tested behavior**, then verify focused/full tests and build.
+- [x] **Step 3: Instantiate `CombatPresentationController` in `CombatBattleScene.create`** after animation registration and before `super.create()`.
+- [x] **Step 4: Commit** each independently verified port behavior separately.
 
 ### Task 3: Route presentation events and health
 
@@ -63,10 +63,10 @@
 - Consumes: the controller created in Task 2 and the coordinator from Task 1.
 - Produces: presentation events, immediate health, and delayed health rendered through the controller.
 
-- [ ] **Step 1: RED-test event delivery and health delivery independently.**
-- [ ] **Step 2: Wire the controller without changing Campaign advancement or snapshot rendering.**
-- [ ] **Step 3: Verify no event is delivered twice and health ratios remain clamped.**
-- [ ] **Step 4: Commit event routing and health routing separately.**
+- [x] **Step 1: RED-test event delivery and health delivery independently.**
+- [x] **Step 2: Wire the controller without changing Campaign advancement or snapshot rendering.**
+- [x] **Step 3: Verify no event is delivered twice and health ratios remain clamped.**
+- [x] **Step 4: Commit event routing and health routing separately.**
 
 ### Task 4: Replace legacy feedback incrementally
 
@@ -79,8 +79,8 @@
 - Consumes: controller events for hits, critical hits, misses, damage numbers, and enemy defeat.
 - Produces: pooled damage numbers, registered sprite effects, delayed HP bar, and coordinated enemy death sequence.
 
-- [ ] **Step 1: Replace damage numbers after RED/GREEN verification.**
-- [ ] **Step 2: Replace hit/critical/miss feedback after RED/GREEN verification.**
-- [ ] **Step 3: Replace enemy death feedback after RED/GREEN verification.**
-- [ ] **Step 4: Remove only the now-duplicated legacy code.**
-- [ ] **Step 5: Run regression tests, typecheck, build, and verify Vercel Production `READY`.**
+- [x] **Step 1: Replace damage numbers after RED/GREEN verification.**
+- [x] **Step 2: Replace hit/critical/miss feedback after RED/GREEN verification.**
+- [x] **Step 3: Replace enemy death feedback after RED/GREEN verification.**
+- [x] **Step 4: Remove only the now-duplicated legacy code.**
+- [x] **Step 5: Run regression tests, typecheck, build, and verify Vercel Production `READY`.**
