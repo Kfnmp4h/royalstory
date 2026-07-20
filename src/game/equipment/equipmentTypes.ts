@@ -83,6 +83,11 @@ export interface DismantleResult {
   readonly armorStones: number;
 }
 
+export interface MassDismantleResult {
+  readonly items: readonly EquipmentItem[];
+  readonly armorStones: number;
+}
+
 export interface EquipmentSnapshot {
   readonly inventory: readonly EquipmentItem[];
   readonly equipped: EquippedItems;
@@ -110,6 +115,7 @@ export interface EquipmentController {
   equip(itemId: string): void;
   equipBest(): void;
   dismantle(itemId: string): DismantleResult;
+  dismantleLowerPower(): MassDismantleResult;
   compare(itemId: string): ItemComparison;
   getSnapshot(baseStats: Readonly<PlayerStats>): EquipmentSnapshot;
   getPersistentState(): EquipmentPersistentState;
