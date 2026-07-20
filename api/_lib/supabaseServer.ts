@@ -1,5 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
-import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { getServerEnv } from './env';
 import type { PlayerStateDatabase } from './playerRepository';
 
@@ -92,10 +92,15 @@ export function createRequestSupabase(request: Request): RequestSupabaseContext 
   };
 }
 
-export async function requireUser(client: SupabaseClient): Promise<User | null> {
-  const { data, error } = await client.auth.getUser();
-  if (error || !data.user) return null;
-  return data.user;
+interface AuthenticatedUser {
+  readonly id: string;
+}
+
+export async function requireUser(client: SupabaseClient): Promise<AuthenticatedUser | null> {
+  const { data, error } = await client.auth.getClaims();
+  const subject = data?.claims?.sub;
+  if (error || typeof subject !== 'string' || subject.length === 0) return null;
+  return Object.freeze({ id: subject });
 }
 
 interface DatabaseRow {
