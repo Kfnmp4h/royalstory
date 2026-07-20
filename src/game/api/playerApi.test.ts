@@ -24,20 +24,39 @@ const record = {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('playerApi', () => {
-  it('preserves stale canonical responses and credentials', async () => {
+  it('retries a stale foreground command once with the canonical server version', async () => {
+    const savedRecord = { ...record, saveVersion: 10 };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ kind: 'stale', record }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ kind: 'saved', record: savedRecord }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(playerApi.command({ type: 'startBoss', expectedVersion: 8 }))
+      .resolves.toEqual({ kind: 'saved', record: savedRecord });
+    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/player/commands', expect.objectContaining({
+      body: JSON.stringify({ type: 'startBoss', expectedVersion: 8 }),
+    }));
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/player/commands', expect.objectContaining({
+      body: JSON.stringify({ type: 'startBoss', expectedVersion: 9 }),
+    }));
+  });
+
+  it('preserves stale sync responses without retrying', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ kind: 'stale', record }), {
       status: 409,
       headers: { 'Content-Type': 'application/json' },
     }));
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(playerApi.command({ type: 'equipBest', expectedVersion: 2 }))
+    await expect(playerApi.command({ type: 'sync', expectedVersion: 2 }))
       .resolves.toEqual({ kind: 'stale', record });
-    expect(fetchMock).toHaveBeenCalledWith('/api/player/commands', expect.objectContaining({
-      method: 'POST',
-      credentials: 'include',
-      body: JSON.stringify({ type: 'equipBest', expectedVersion: 2 }),
-    }));
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it('forwards an abort signal for cancellable commands', async () => {
