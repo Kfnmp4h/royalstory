@@ -4,7 +4,7 @@ import { playerApi } from './game/api/playerApi';
 import type { CampaignMode } from './game/campaign/campaignTypes';
 import { createBattleGame } from './game/phaser/battleGame';
 import type { BattleController, BattleStatus } from './game/phaser/battleGame';
-import type { PlayerApiRecord, PlayerApiResponse, PlayerCommand } from './game/save/saveTypes';
+import type { CampaignPersistentState, PlayerApiRecord, PlayerApiResponse, PlayerCommand } from './game/save/saveTypes';
 import { subscribeToVisibility } from './game/visibilityController';
 
 interface AppProps {
@@ -44,6 +44,7 @@ const hasRecord = (response: PlayerApiResponse): response is Extract<PlayerApiRe
 export function App({ record, onRecordChange, initialNotice = null }: AppProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<BattleController | null>(null);
+  const mountedCampaignRef = useRef<CampaignPersistentState | null>(null);
   const commandInFlightRef = useRef(false);
   const previousLevelRef = useRef<number | null>(null);
   const previousDropIdRef = useRef<string | null>(null);
@@ -67,6 +68,7 @@ export function App({ record, onRecordChange, initialNotice = null }: AppProps) 
     let active = true;
     setStatus(null);
     setError(null);
+    mountedCampaignRef.current = record.state.campaign;
 
     const controller = createBattleGame({
       parent,
@@ -84,9 +86,16 @@ export function App({ record, onRecordChange, initialNotice = null }: AppProps) 
       active = false;
       controller.destroy();
       if (controllerRef.current === controller) controllerRef.current = null;
+      mountedCampaignRef.current = null;
       parent.replaceChildren();
     };
-  }, [record.saveVersion, record.state.campaign]);
+  }, []);
+
+  useEffect(() => {
+    if (mountedCampaignRef.current === record.state.campaign) return;
+    mountedCampaignRef.current = record.state.campaign;
+    controllerRef.current?.replaceState(record.state.campaign);
+  }, [record.state.campaign]);
 
   useEffect(() => subscribeToVisibility(document, (hidden) => {
     controllerRef.current?.setPaused(hidden);
