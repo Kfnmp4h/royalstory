@@ -51,6 +51,7 @@ export function parsePlayerCommand(value: unknown): PlayerCommand {
     case 'startBreakthrough':
     case 'startBoss':
     case 'equipBest':
+    case 'dismantleLowerPower':
       return { type: input.type, expectedVersion };
     case 'equip':
       return { type: 'equip', expectedVersion, itemId: parseItemId(input.itemId) };
@@ -122,6 +123,9 @@ export function createPlayerService(repository: PlayerRepository) {
       if (command.type === 'equipBest') campaign.equipBest();
       if (command.type === 'dismantle') {
         armorStones += campaign.dismantle(command.itemId).armorStones;
+      }
+      if (command.type === 'dismantleLowerPower') {
+        armorStones += campaign.dismantleLowerPower().armorStones;
       }
       nextState = Object.freeze({
         ...record.state,
