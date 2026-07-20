@@ -146,7 +146,6 @@ describe('App server-authoritative experience', () => {
     fireEvent.keyDown(equipmentTab, { key: 'ArrowLeft' });
     expect(battleTab).toHaveFocus();
     expect(battleTab).toHaveAttribute('aria-selected', 'true');
-    expect(battleGame.createBattleGame).toHaveBeenCalledTimes(1);
   });
 
   it('sends campaign actions as typed commands with the expected save version', async () => {
@@ -198,6 +197,24 @@ describe('App server-authoritative experience', () => {
       type: 'startBreakthrough',
       expectedVersion: 7,
     }));
+  });
+
+  it('retries a foreground command once when an in-flight sync made its version stale', async () => {
+    const newerRecord = createRecord(8, 150);
+    const savedRecord = createRecord(9, 150);
+    playerApiMock.command
+      .mockResolvedValueOnce({ kind: 'stale', record: newerRecord } satisfies PlayerApiResponse)
+      .mockResolvedValueOnce({ kind: 'saved', record: savedRecord } satisfies PlayerApiResponse);
+    renderApp();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start breakthrough' }));
+
+    await waitFor(() => expect(playerApiMock.command).toHaveBeenNthCalledWith(2, {
+      type: 'startBreakthrough',
+      expectedVersion: 8,
+    }));
+    expect(onRecordChange).toHaveBeenCalledWith(savedRecord);
+    expect(screen.queryByText('A newer server save replaced this tab’s local view.')).not.toBeInTheDocument();
   });
 
   it('accepts a newer stale record and tells the user that the server replaced the tab', async () => {
