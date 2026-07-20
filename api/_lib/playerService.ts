@@ -93,7 +93,8 @@ export function createPlayerService(repository: PlayerRepository) {
 
   const execute = async (userId: string, command: PlayerCommand, now: Date): Promise<PlayerApiResponse> => {
     const record = await repository.loadOrCreatePlayerState(userId, now);
-    if (record.saveVersion !== command.expectedVersion) return staleResponse(record);
+    if (command.type === 'sync' && record.saveVersion !== command.expectedVersion) return staleResponse(record);
+    const expectedVersion = record.saveVersion;
 
     let nextState = record.state;
     let offline: OfflineRewardSummary | undefined;
@@ -134,7 +135,7 @@ export function createPlayerService(repository: PlayerRepository) {
       });
     }
 
-    const result = await repository.savePlayerState(userId, command.expectedVersion, nextState, now);
+    const result = await repository.savePlayerState(userId, expectedVersion, nextState, now);
     if (result.kind === 'stale') return staleResponse(result.record);
     return Object.freeze({
       kind: 'saved',
