@@ -1,4 +1,4 @@
-import { applyActiveBattleState } from '../phaser/battleStateBridge';
+import { applyActiveBattleCommand, applyActiveBattleState } from '../phaser/battleStateBridge';
 import type { PlayerApiResponse, PlayerCommand } from '../save/saveTypes';
 
 const unavailable = (): PlayerApiResponse => ({
@@ -43,6 +43,7 @@ const applyCommandResponse = (response: PlayerApiResponse): PlayerApiResponse =>
 };
 
 const command = async (commandToSend: PlayerCommand, signal?: AbortSignal): Promise<PlayerApiResponse> => {
+  applyActiveBattleCommand(commandToSend);
   const response = await sendCommand(commandToSend, signal);
   if (commandToSend.type === 'sync' || response.kind !== 'stale') return applyCommandResponse(response);
 
