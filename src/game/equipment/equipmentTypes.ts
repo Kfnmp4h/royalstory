@@ -78,6 +78,11 @@ export interface ItemComparison {
   readonly statDeltas: EquipmentTotals;
 }
 
+export interface DismantleResult {
+  readonly item: EquipmentItem;
+  readonly armorStones: number;
+}
+
 export interface EquipmentSnapshot {
   readonly inventory: readonly EquipmentItem[];
   readonly equipped: EquippedItems;
@@ -104,6 +109,7 @@ export interface EquipmentController {
   rollDrop(source: DropSource, itemLevel: number): EquipmentItem | null;
   equip(itemId: string): void;
   equipBest(): void;
+  dismantle(itemId: string): DismantleResult;
   compare(itemId: string): ItemComparison;
   getSnapshot(baseStats: Readonly<PlayerStats>): EquipmentSnapshot;
   getPersistentState(): EquipmentPersistentState;
