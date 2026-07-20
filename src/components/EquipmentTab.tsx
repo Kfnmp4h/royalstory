@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { getDismantleReward } from '../game/equipment/dismantleReward';
 import { compareItems } from '../game/equipment/equipmentPower';
+import { getLowerPowerDismantleItems } from '../game/equipment/lowerPowerDismantle';
 import {
   EQUIPMENT_SLOTS,
   type EquipmentItem,
@@ -51,7 +52,10 @@ interface EquipmentTabProps {
   readonly onEquip: (itemId: string) => void;
   readonly onEquipBest: () => void;
   readonly onDismantle: (itemId: string) => void;
+  readonly onDismantleLowerPower: () => void;
 }
+
+type DismantleDialogMode = 'single' | 'mass' | null;
 
 function EquipmentSummary({ item }: { item: EquipmentItem }) {
   return (
@@ -73,25 +77,51 @@ export function EquipmentTab({
   onEquip,
   onEquipBest,
   onDismantle,
+  onDismantleLowerPower,
 }: EquipmentTabProps) {
   const dismantleTriggerRef = useRef<HTMLButtonElement>(null);
-  const [dismantleDialogOpen, setDismantleDialogOpen] = useState(false);
+  const massDismantleTriggerRef = useRef<HTMLButtonElement>(null);
+  const [dialogMode, setDialogMode] = useState<DismantleDialogMode>(null);
   const selectedItem = equipment?.inventory.find((item) => item.id === selectedItemId) ?? null;
   const comparison = selectedItem && equipment
     ? compareItems(selectedItem, equipment.equipped[selectedItem.slot])
     : null;
   const dismantleReward = selectedItem ? getDismantleReward(selectedItem) : 0;
+  const lowerPowerItems = equipment
+    ? getLowerPowerDismantleItems(equipment.inventory, equipment.equipped)
+    : [];
+  const lowerPowerReward = lowerPowerItems.reduce(
+    (total, item) => total + getDismantleReward(item),
+    0,
+  );
+  const selectedIsLowerPower = selectedItem !== null
+    && lowerPowerItems.some((item) => item.id === selectedItem.id);
 
-  const closeDismantleDialog = () => {
-    setDismantleDialogOpen(false);
-    window.requestAnimationFrame(() => dismantleTriggerRef.current?.focus());
+  const closeDialog = () => {
+    const trigger = dialogMode === 'mass' ? massDismantleTriggerRef : dismantleTriggerRef;
+    setDialogMode(null);
+    window.requestAnimationFrame(() => trigger.current?.focus());
   };
 
-  const confirmDismantle = () => {
+  const handleSelectedDismantle = () => {
+    if (!selectedItem) return;
+    if (selectedIsLowerPower) {
+      onDismantle(selectedItem.id);
+      return;
+    }
+    setDialogMode('single');
+  };
+
+  const confirmSingleDismantle = () => {
     if (!selectedItem) return;
     const itemId = selectedItem.id;
-    closeDismantleDialog();
+    closeDialog();
     onDismantle(itemId);
+  };
+
+  const confirmMassDismantle = () => {
+    closeDialog();
+    onDismantleLowerPower();
   };
 
   return (
@@ -128,14 +158,25 @@ export function EquipmentTab({
               );
             })}
           </div>
-          <button
-            className="primary-action equip-best"
-            type="button"
-            disabled={serverBusy}
-            onClick={onEquipBest}
-          >
-            Equip Best
-          </button>
+          <div className="equipment-actions equipment-bulk-actions">
+            <button
+              className="primary-action equip-best"
+              type="button"
+              disabled={serverBusy}
+              onClick={onEquipBest}
+            >
+              Equip Best
+            </button>
+            <button
+              ref={massDismantleTriggerRef}
+              className="dismantle-action"
+              type="button"
+              disabled={serverBusy || lowerPowerItems.length === 0}
+              onClick={() => setDialogMode('mass')}
+            >
+              Dismantle All Lower Power ({lowerPowerItems.length})
+            </button>
+          </div>
 
           <section className="inventory-panel" aria-label="Inventory">
             <div className="inventory-heading">
@@ -200,7 +241,7 @@ export function EquipmentTab({
                   className="dismantle-action"
                   type="button"
                   disabled={serverBusy}
-                  onClick={() => setDismantleDialogOpen(true)}
+                  onClick={handleSelectedDismantle}
                 >
                   Dismantle · Receive {dismantleReward} Armor Stones
                 </button>
@@ -214,13 +255,22 @@ export function EquipmentTab({
           {dropMessage}
         </p>
       ) : null}
-      {dismantleDialogOpen && selectedItem ? (
+      {dialogMode === 'single' && selectedItem ? (
         <DismantleConfirmDialog
           itemName={selectedItem.name}
           reward={dismantleReward}
           busy={serverBusy}
-          onCancel={closeDismantleDialog}
-          onConfirm={confirmDismantle}
+          onCancel={closeDialog}
+          onConfirm={confirmSingleDismantle}
+        />
+      ) : null}
+      {dialogMode === 'mass' ? (
+        <DismantleConfirmDialog
+          itemCount={lowerPowerItems.length}
+          reward={lowerPowerReward}
+          busy={serverBusy}
+          onCancel={closeDialog}
+          onConfirm={confirmMassDismantle}
         />
       ) : null}
     </section>
