@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { getDismantleReward } from '../game/equipment/dismantleReward';
 import { compareItems } from '../game/equipment/equipmentPower';
 import {
@@ -7,6 +8,7 @@ import {
   type EquipmentSnapshot,
   type EquipmentStatKey,
 } from '../game/equipment/equipmentTypes';
+import { DismantleConfirmDialog } from './DismantleConfirmDialog';
 
 const rarityClass: Record<EquipmentRarity, string> = {
   Normal: 'rarity-normal',
@@ -72,18 +74,24 @@ export function EquipmentTab({
   onEquipBest,
   onDismantle,
 }: EquipmentTabProps) {
+  const dismantleTriggerRef = useRef<HTMLButtonElement>(null);
+  const [dismantleDialogOpen, setDismantleDialogOpen] = useState(false);
   const selectedItem = equipment?.inventory.find((item) => item.id === selectedItemId) ?? null;
   const comparison = selectedItem && equipment
     ? compareItems(selectedItem, equipment.equipped[selectedItem.slot])
     : null;
   const dismantleReward = selectedItem ? getDismantleReward(selectedItem) : 0;
 
+  const closeDismantleDialog = () => {
+    setDismantleDialogOpen(false);
+    window.requestAnimationFrame(() => dismantleTriggerRef.current?.focus());
+  };
+
   const confirmDismantle = () => {
     if (!selectedItem) return;
-    const confirmed = window.confirm(
-      `Dismantle ${selectedItem.name} permanently for ${dismantleReward} Armor Stones?`,
-    );
-    if (confirmed) onDismantle(selectedItem.id);
+    const itemId = selectedItem.id;
+    closeDismantleDialog();
+    onDismantle(itemId);
   };
 
   return (
@@ -188,10 +196,11 @@ export function EquipmentTab({
                   Equip selected
                 </button>
                 <button
+                  ref={dismantleTriggerRef}
                   className="dismantle-action"
                   type="button"
                   disabled={serverBusy}
-                  onClick={confirmDismantle}
+                  onClick={() => setDismantleDialogOpen(true)}
                 >
                   Dismantle · Receive {dismantleReward} Armor Stones
                 </button>
@@ -204,6 +213,15 @@ export function EquipmentTab({
         <p className="drop-message" role="status" aria-label="Latest equipment drop" aria-live="polite">
           {dropMessage}
         </p>
+      ) : null}
+      {dismantleDialogOpen && selectedItem ? (
+        <DismantleConfirmDialog
+          itemName={selectedItem.name}
+          reward={dismantleReward}
+          busy={serverBusy}
+          onCancel={closeDismantleDialog}
+          onConfirm={confirmDismantle}
+        />
       ) : null}
     </section>
   );
