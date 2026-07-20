@@ -21,6 +21,7 @@ import {
   type RandomSource,
 } from './equipmentTypes';
 import { rollEquipmentDrop } from './itemGenerator';
+import { getLowerPowerDismantleItems } from './lowerPowerDismantle';
 
 type MutableEquippedItems = Record<EquipmentSlot, EquipmentItem | null>;
 
@@ -187,6 +188,15 @@ export function createEquipmentController(
     return Object.freeze({ item, armorStones: getDismantleReward(item) });
   };
 
+  const dismantleLowerPower = () => {
+    const items = getLowerPowerDismantleItems(inventory, equipped as EquippedItems);
+    const ids = new Set(items.map((item) => item.id));
+    const armorStones = items.reduce((total, item) => total + getDismantleReward(item), 0);
+    inventory = inventory.filter((item) => !ids.has(item.id));
+    if (latestDrop && ids.has(latestDrop.id)) latestDrop = null;
+    return Object.freeze({ items, armorStones });
+  };
+
   const compare = (itemId: string) => {
     const item = inventory.find((candidate) => candidate.id === itemId);
     if (!item) throw new Error('Inventory item not found');
@@ -220,5 +230,5 @@ export function createEquipmentController(
     nextItemNumber,
   });
 
-  return { rollDrop, equip, equipBest, dismantle, compare, getSnapshot, getPersistentState };
+  return { rollDrop, equip, equipBest, dismantle, dismantleLowerPower, compare, getSnapshot, getPersistentState };
 }
