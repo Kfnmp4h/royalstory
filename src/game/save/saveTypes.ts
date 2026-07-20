@@ -28,6 +28,7 @@ export interface CampaignPersistentState {
 export interface PlayerSaveState {
   readonly schemaVersion: 1;
   readonly gold: number;
+  readonly armorStones: number;
   readonly campaign: CampaignPersistentState;
 }
 
@@ -36,7 +37,8 @@ export type PlayerCommand =
   | { readonly type: 'startBreakthrough'; readonly expectedVersion: number }
   | { readonly type: 'startBoss'; readonly expectedVersion: number }
   | { readonly type: 'equip'; readonly expectedVersion: number; readonly itemId: string }
-  | { readonly type: 'equipBest'; readonly expectedVersion: number };
+  | { readonly type: 'equipBest'; readonly expectedVersion: number }
+  | { readonly type: 'dismantle'; readonly expectedVersion: number; readonly itemId: string };
 
 export interface PlayerApiRecord {
   readonly saveVersion: number;
