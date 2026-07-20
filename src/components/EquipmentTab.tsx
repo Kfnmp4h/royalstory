@@ -1,3 +1,4 @@
+import { getDismantleReward } from '../game/equipment/dismantleReward';
 import { compareItems } from '../game/equipment/equipmentPower';
 import {
   EQUIPMENT_SLOTS,
@@ -47,6 +48,7 @@ interface EquipmentTabProps {
   readonly onSelectItem: (itemId: string) => void;
   readonly onEquip: (itemId: string) => void;
   readonly onEquipBest: () => void;
+  readonly onDismantle: (itemId: string) => void;
 }
 
 function EquipmentSummary({ item }: { item: EquipmentItem }) {
@@ -68,11 +70,21 @@ export function EquipmentTab({
   onSelectItem,
   onEquip,
   onEquipBest,
+  onDismantle,
 }: EquipmentTabProps) {
   const selectedItem = equipment?.inventory.find((item) => item.id === selectedItemId) ?? null;
   const comparison = selectedItem && equipment
     ? compareItems(selectedItem, equipment.equipped[selectedItem.slot])
     : null;
+  const dismantleReward = selectedItem ? getDismantleReward(selectedItem) : 0;
+
+  const confirmDismantle = () => {
+    if (!selectedItem) return;
+    const confirmed = window.confirm(
+      `Dismantle ${selectedItem.name} permanently for ${dismantleReward} Armor Stones?`,
+    );
+    if (confirmed) onDismantle(selectedItem.id);
+  };
 
   return (
     <section className="equipment-panel" aria-label="Equipment">
@@ -166,14 +178,24 @@ export function EquipmentTab({
                     );
                   })}
               </dl>
-              <button
-                className="primary-action"
-                type="button"
-                disabled={serverBusy}
-                onClick={() => onEquip(comparison.selected.id)}
-              >
-                Equip selected
-              </button>
+              <div className="equipment-actions">
+                <button
+                  className="primary-action"
+                  type="button"
+                  disabled={serverBusy}
+                  onClick={() => onEquip(comparison.selected.id)}
+                >
+                  Equip selected
+                </button>
+                <button
+                  className="dismantle-action"
+                  type="button"
+                  disabled={serverBusy}
+                  onClick={confirmDismantle}
+                >
+                  Dismantle · Receive {dismantleReward} Armor Stones
+                </button>
+              </div>
             </aside>
           ) : null}
         </>
