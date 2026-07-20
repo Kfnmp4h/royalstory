@@ -239,6 +239,7 @@ export const createCampaignController = (
       equipment.equipBest();
       applyEquipmentProfile();
     },
+    dismantle: (itemId: string) => equipment.dismantle(itemId),
     getSnapshot,
     getPersistentState,
   };
