@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createCampaignController } from './game/campaign/campaignController';
 import { createInitialPlayerSaveState } from './game/save/saveCodec';
 import type { BattleStatus } from './game/phaser/battleGame';
@@ -10,6 +10,7 @@ const battleGame = vi.hoisted(() => ({
   createBattleGame: vi.fn(),
   destroy: vi.fn(),
   setPaused: vi.fn(),
+  replaceState: vi.fn(),
 }));
 
 const playerApiMock = vi.hoisted(() => ({
@@ -60,6 +61,8 @@ const deferred = <T,>() => {
   return { promise, resolve };
 };
 
+afterEach(() => vi.useRealTimers());
+
 describe('App server-authoritative experience', () => {
   let callbacks: GameCallbacks;
   let record: PlayerApiRecord;
@@ -77,6 +80,7 @@ describe('App server-authoritative experience', () => {
       return {
         destroy: battleGame.destroy,
         setPaused: battleGame.setPaused,
+        replaceState: battleGame.replaceState,
       };
     });
 
@@ -156,7 +160,7 @@ describe('App server-authoritative experience', () => {
     expect(onRecordChange).toHaveBeenCalledWith(record);
   });
 
-  it('disables mutations and shows Saving while a command is pending', async () => {
+  it('disables mutations and shows Saving while a foreground command is pending', async () => {
     const pending = deferred<PlayerApiResponse>();
     playerApiMock.command.mockReturnValueOnce(pending.promise);
     renderApp();
@@ -169,6 +173,31 @@ describe('App server-authoritative experience', () => {
 
     await act(async () => pending.resolve({ kind: 'saved', record }));
     await waitFor(() => expect(button).toBeEnabled());
+  });
+
+  it('keeps controls enabled and aborts background sync for a foreground command', async () => {
+    vi.useFakeTimers();
+    const pendingSync = deferred<PlayerApiResponse>();
+    playerApiMock.command
+      .mockReturnValueOnce(pendingSync.promise)
+      .mockResolvedValueOnce({ kind: 'saved', record } satisfies PlayerApiResponse);
+    renderApp();
+
+    await act(async () => vi.advanceTimersByTime(15_000));
+    const syncSignal = playerApiMock.command.mock.calls[0]?.[1] as AbortSignal;
+    const button = screen.getByRole('button', { name: 'Start breakthrough' });
+
+    expect(syncSignal).toBeInstanceOf(AbortSignal);
+    expect(button).toBeEnabled();
+    expect(screen.queryByText('Saving')).not.toBeInTheDocument();
+
+    fireEvent.click(button);
+
+    expect(syncSignal.aborted).toBe(true);
+    await waitFor(() => expect(playerApiMock.command).toHaveBeenLastCalledWith({
+      type: 'startBreakthrough',
+      expectedVersion: 7,
+    }));
   });
 
   it('accepts a newer stale record and tells the user that the server replaced the tab', async () => {
@@ -211,6 +240,6 @@ describe('App server-authoritative experience', () => {
   it('contains no browser game persistence or direct Supabase access', () => {
     expect(appSource).not.toMatch(/localStorage|sessionStorage|indexedDB|document\.cookie/);
     expect(appSource).not.toMatch(/createClient\(|@supabase/);
-    expect(appSource).toContain("playerApi.command");
+    expect(appSource).toContain('playerApi.command');
   });
 });
