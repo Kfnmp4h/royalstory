@@ -3,6 +3,7 @@ import { createCampaignController } from '../campaign/campaignController';
 import type { CampaignSnapshot, EncounterVisual, PersistentCampaignController } from '../campaign/campaignTypes';
 import type { CampaignPersistentState } from '../save/saveTypes';
 import { CombatBattleScene } from './CombatBattleScene';
+import { registerBattleStateReceiver } from './battleStateBridge';
 
 interface ReplaceableBattleScene {
   campaign: PersistentCampaignController;
@@ -90,7 +91,7 @@ export function createBattleGame({
   });
   let destroyed = false;
 
-  return {
+  const controller: BattleController = {
     setPaused(paused) {
       if (destroyed) return;
       battleScene.setCombatPaused(paused);
@@ -127,7 +128,11 @@ export function createBattleGame({
     destroy() {
       if (destroyed) return;
       destroyed = true;
+      unregisterBattleStateReceiver();
       game.destroy(true);
     },
   };
+
+  const unregisterBattleStateReceiver = registerBattleStateReceiver((state) => controller.replaceState(state));
+  return controller;
 }
