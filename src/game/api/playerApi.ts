@@ -30,9 +30,10 @@ const request = async (path: string, init: RequestInit): Promise<PlayerApiRespon
 
 export const playerApi = Object.freeze({
   load: () => request('/api/player', { method: 'GET' }),
-  command: (command: PlayerCommand) => request('/api/player/commands', {
+  command: (command: PlayerCommand, signal?: AbortSignal) => request('/api/player/commands', {
     method: 'POST',
     body: JSON.stringify(command),
+    signal,
   }),
   reset: (expectedVersion: number, acknowledgement: string, finalConfirmation: boolean) => request('/api/player/reset', {
     method: 'POST',
