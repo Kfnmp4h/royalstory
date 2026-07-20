@@ -2,10 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { App } from './App';
 import royalStoryLogo from './assets/logo/royalstory-logo.png';
+import { CharacterCreation } from './components/CharacterCreation';
 import { OfflineReturnDialog } from './components/OfflineReturnDialog';
 import { ResetProgressDialog } from './components/ResetProgressDialog';
 import { authApi } from './game/api/authApi';
 import { playerApi } from './game/api/playerApi';
+import { profileApi } from './game/api/profileApi';
+import type { PlayerProfile } from './game/profile/profileTypes';
 import type { OfflineRewardSummary, PlayerApiRecord } from './game/save/saveTypes';
 
 type AuthMode = 'sign-in' | 'sign-up' | 'forgot';
@@ -21,6 +24,9 @@ function AuthLogo() {
 export function AuthRoot() {
   const [recoveringPassword, setRecoveringPassword] = useState(() => window.location.pathname === '/reset-password');
   const [record, setRecord] = useState<PlayerApiRecord | null>(null);
+  const [profile, setProfile] = useState<PlayerProfile | null>(null);
+  const [needsProfile, setNeedsProfile] = useState(false);
+  const [accountError, setAccountError] = useState<string | null>(null);
   const [checking, setChecking] = useState(() => window.location.pathname !== '/reset-password');
   const [mode, setMode] = useState<AuthMode>('sign-in');
   const [email, setEmail] = useState('');
@@ -33,13 +39,43 @@ export function AuthRoot() {
 
   const loadSession = useCallback(async () => {
     setChecking(true);
-    const loaded = await playerApi.load();
+    setAccountError(null);
+    const [loaded, loadedProfile] = await Promise.all([playerApi.load(), profileApi.load()]);
     if (loaded.kind !== 'loaded' && loaded.kind !== 'saved' && loaded.kind !== 'stale') {
       setRecord(null);
+      setProfile(null);
+      setNeedsProfile(false);
       setChecking(false);
       return;
     }
 
+    if (loadedProfile.kind === 'unauthorized') {
+      setRecord(null);
+      setProfile(null);
+      setNeedsProfile(false);
+      setMessage('Your session expired. Sign in again.');
+      setChecking(false);
+      return;
+    }
+
+    setRecord(loaded.record);
+    if (loadedProfile.kind === 'unavailable') {
+      setProfile(null);
+      setNeedsProfile(false);
+      setAccountError(loadedProfile.message);
+      setChecking(false);
+      return;
+    }
+
+    if (loadedProfile.kind === 'missing') {
+      setProfile(null);
+      setNeedsProfile(true);
+      setChecking(false);
+      return;
+    }
+
+    setProfile(loadedProfile.profile);
+    setNeedsProfile(false);
     const synced = await playerApi.command({
       type: 'sync',
       expectedVersion: loaded.record.saveVersion,
@@ -104,9 +140,34 @@ export function AuthRoot() {
     setBusy(true);
     await authApi.signOut();
     setRecord(null);
+    setProfile(null);
+    setNeedsProfile(false);
+    setAccountError(null);
     setGameNotice(null);
     setOfflineSummary(null);
     setResetOpen(false);
+    setBusy(false);
+  };
+
+  const createCharacter = async (characterName: string) => {
+    setBusy(true);
+    setMessage(null);
+    const result = await profileApi.create(characterName);
+    if (result.kind === 'created') {
+      setProfile(result.profile);
+      setNeedsProfile(false);
+    } else if (result.kind === 'name_taken') {
+      setMessage('That character name is already taken.');
+    } else if (result.kind === 'invalid') {
+      setMessage(result.message);
+    } else if (result.kind === 'unauthorized') {
+      setRecord(null);
+      setProfile(null);
+      setNeedsProfile(false);
+      setMessage('Your session expired. Sign in again.');
+    } else {
+      setMessage(result.message);
+    }
     setBusy(false);
   };
 
@@ -122,6 +183,7 @@ export function AuthRoot() {
       setResetOpen(false);
     } else if (response.kind === 'unauthorized') {
       setRecord(null);
+      setProfile(null);
       setMessage('Your session expired. Sign in again.');
       setResetOpen(false);
     } else {
@@ -173,6 +235,29 @@ export function AuthRoot() {
 
   if (checking) return <main className="auth-shell"><AuthLogo /><p className="auth-loading">Checking account session…</p></main>;
 
+  if (record && accountError) {
+    return (
+      <main className="auth-shell">
+        <AuthLogo />
+        <section className="auth-panel" aria-label="RoyalStory account loading error">
+          <h1>Unable to Load Profile</h1>
+          <p role="alert">{accountError}</p>
+          <button className="primary-action" type="button" onClick={() => void loadSession()}>Try Again</button>
+          <div className="auth-actions"><button type="button" onClick={() => void signOut()}>Sign out</button></div>
+        </section>
+      </main>
+    );
+  }
+
+  if (record && needsProfile) {
+    return (
+      <main className="auth-shell">
+        <AuthLogo />
+        <CharacterCreation busy={busy} serverMessage={message} onCreate={createCharacter} onSignOut={signOut} />
+      </main>
+    );
+  }
+
   if (!record) {
     return (
       <main className="auth-shell">
@@ -199,7 +284,7 @@ export function AuthRoot() {
   return (
     <>
       <div className="account-bar">
-        <span>Online save active</span>
+        <span>{profile ? `${profile.characterName} · Online save active` : 'Online save active'}</span>
         <div className="account-actions">
           <button type="button" disabled={busy} onClick={() => setResetOpen(true)}>Reset progress</button>
           <button type="button" disabled={busy} onClick={signOut}>Sign out</button>
