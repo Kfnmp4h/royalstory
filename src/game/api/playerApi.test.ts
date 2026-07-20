@@ -40,6 +40,21 @@ describe('playerApi', () => {
     }));
   });
 
+  it('forwards an abort signal for cancellable commands', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ kind: 'saved', record }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    const controller = new AbortController();
+
+    await playerApi.command({ type: 'sync', expectedVersion: 9 }, controller.signal);
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/player/commands', expect.objectContaining({
+      signal: controller.signal,
+    }));
+  });
+
   it('maps network failure to an unavailable response', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')));
     await expect(playerApi.load()).resolves.toEqual({
