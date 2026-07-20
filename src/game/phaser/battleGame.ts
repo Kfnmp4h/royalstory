@@ -4,12 +4,18 @@ import type { CampaignSnapshot, PersistentCampaignController } from '../campaign
 import type { CampaignPersistentState } from '../save/saveTypes';
 import { CombatBattleScene } from './CombatBattleScene';
 
+interface ReplaceableBattleScene {
+  campaign: PersistentCampaignController;
+  renderAndPublish(snapshot: CampaignSnapshot): void;
+}
+
 export interface BattleController {
   setPaused(paused: boolean): void;
   startBreakthrough(): void;
   startBoss(): void;
   equip(itemId: string): void;
   equipBest(): void;
+  replaceState(state: CampaignPersistentState): void;
   destroy(): void;
 }
 
@@ -32,11 +38,9 @@ export function createBattleGame({
   onError,
 }: CreateBattleGameOptions): BattleController {
   const battleScene = new CombatBattleScene(onStatus, onError);
+  const replaceableScene = battleScene as unknown as ReplaceableBattleScene;
   if (initialState) {
-    Object.assign(
-      battleScene as unknown as { campaign: PersistentCampaignController },
-      { campaign: createCampaignController(undefined, { initialState }) },
-    );
+    replaceableScene.campaign = createCampaignController(undefined, { initialState });
   }
   const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -71,6 +75,12 @@ export function createBattleGame({
     equipBest() {
       if (destroyed) return;
       battleScene.equipBest();
+    },
+    replaceState(state) {
+      if (destroyed) return;
+      const campaign = createCampaignController(undefined, { initialState: state });
+      replaceableScene.campaign = campaign;
+      replaceableScene.renderAndPublish(campaign.getSnapshot());
     },
     destroy() {
       if (destroyed) return;
