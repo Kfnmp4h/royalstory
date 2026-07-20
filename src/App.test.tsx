@@ -108,6 +108,43 @@ describe('App server-authoritative experience', () => {
     expect(battleGame.destroy).toHaveBeenCalledOnce();
   });
 
+  it('selects Battle by default and switches to Equipment without remounting Phaser', () => {
+    renderApp();
+
+    const battleTab = screen.getByRole('tab', { name: 'Battle' });
+    const equipmentTab = screen.getByRole('tab', { name: 'Equipment' });
+    const battlePanel = screen.getByRole('tabpanel', { name: 'Battle' });
+
+    expect(battleTab).toHaveAttribute('aria-selected', 'true');
+    expect(equipmentTab).toHaveAttribute('aria-selected', 'false');
+    expect(battlePanel).not.toHaveAttribute('hidden');
+    expect(screen.queryByRole('tabpanel', { name: 'Equipment' })).not.toBeInTheDocument();
+
+    fireEvent.click(equipmentTab);
+
+    expect(battleTab).toHaveAttribute('aria-selected', 'false');
+    expect(equipmentTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel', { name: 'Equipment' })).toBeInTheDocument();
+    expect(battleGame.createBattleGame).toHaveBeenCalledTimes(1);
+  });
+
+  it('supports Left and Right arrow navigation between tabs', () => {
+    renderApp();
+
+    const battleTab = screen.getByRole('tab', { name: 'Battle' });
+    const equipmentTab = screen.getByRole('tab', { name: 'Equipment' });
+
+    battleTab.focus();
+    fireEvent.keyDown(battleTab, { key: 'ArrowRight' });
+    expect(equipmentTab).toHaveFocus();
+    expect(equipmentTab).toHaveAttribute('aria-selected', 'true');
+
+    fireEvent.keyDown(equipmentTab, { key: 'ArrowLeft' });
+    expect(battleTab).toHaveFocus();
+    expect(battleTab).toHaveAttribute('aria-selected', 'true');
+    expect(battleGame.createBattleGame).toHaveBeenCalledTimes(1);
+  });
+
   it('sends campaign actions as typed commands with the expected save version', async () => {
     renderApp();
     fireEvent.click(screen.getByRole('button', { name: 'Start breakthrough' }));
