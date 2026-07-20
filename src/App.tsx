@@ -102,6 +102,9 @@ export function App({ record, onRecordChange, initialNotice = null }: AppProps) 
       onRecordChange(response.record);
       if (response.kind === 'stale') {
         setServerNotice('A newer server save replaced this tab’s local view.');
+      } else if (response.kind === 'saved' && command.type === 'dismantle') {
+        setSelectedItemId(null);
+        setServerNotice(`Equipment dismantled. Armor Stones: ${response.record.state.armorStones}.`);
       } else if ('offline' in response && response.offline && response.offline.kills > 0) {
         setServerNotice(
           `Offline rewards: ${response.offline.gold} gold, ${response.offline.xp} XP, ${response.offline.drops.length} drops.`,
@@ -185,7 +188,10 @@ export function App({ record, onRecordChange, initialNotice = null }: AppProps) 
       <header className="hero-header">
         <p className="eyebrow">Milestone 6 · Online Kingdom</p>
         <h1>RoyalStory</h1>
-        <p>Gold: {record.state.gold}</p>
+        <div className="currency-summary" aria-label="Currencies">
+          <p>Gold: {record.state.gold}</p>
+          <p>Armor Stones: {record.state.armorStones}</p>
+        </div>
         {serverNotice ? <p role="status">{serverNotice}</p> : null}
       </header>
 
@@ -334,6 +340,11 @@ export function App({ record, onRecordChange, initialNotice = null }: AppProps) 
           onEquipBest={() => void issueCommand({ type: 'equipBest', expectedVersion: record.saveVersion })}
           onEquip={(itemId) => void issueCommand({
             type: 'equip',
+            expectedVersion: record.saveVersion,
+            itemId,
+          })}
+          onDismantle={(itemId) => void issueCommand({
+            type: 'dismantle',
             expectedVersion: record.saveVersion,
             itemId,
           })}
