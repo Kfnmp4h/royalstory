@@ -194,6 +194,7 @@ export function createInitialPlayerSaveState(): PlayerSaveState {
   return Object.freeze({
     schemaVersion: 1,
     gold: 0,
+    armorStones: 0,
     campaign: Object.freeze({
       chapterNumber: 1,
       unlockedChapter: 1,
@@ -212,6 +213,9 @@ export function parsePlayerSaveState(value: unknown): PlayerSaveState {
   return Object.freeze({
     schemaVersion: 1,
     gold: parseInteger(value.gold, 0, Number.MAX_SAFE_INTEGER, 'Gold must be a non-negative integer'),
+    armorStones: value.armorStones === undefined
+      ? 0
+      : parseInteger(value.armorStones, 0, Number.MAX_SAFE_INTEGER, 'Armor Stones must be a non-negative integer'),
     campaign: parseCampaign(value.campaign),
   });
 }
