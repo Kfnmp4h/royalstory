@@ -1,5 +1,6 @@
 import { EQUIPMENT_BALANCE } from '../balance/equipmentBalance';
 import type { PlayerCombatProfile, PlayerStats } from '../types';
+import { getDismantleReward } from './dismantleReward';
 import {
   calculateHeroPower,
   compareItems,
@@ -178,6 +179,14 @@ export function createEquipmentController(
     equipped = nextEquipped;
   };
 
+  const dismantle = (itemId: string) => {
+    const item = inventory.find((candidate) => candidate.id === itemId);
+    if (!item) throw new Error('Inventory item not found');
+    inventory = inventory.filter((candidate) => candidate.id !== itemId);
+    if (latestDrop?.id === itemId) latestDrop = null;
+    return Object.freeze({ item, armorStones: getDismantleReward(item) });
+  };
+
   const compare = (itemId: string) => {
     const item = inventory.find((candidate) => candidate.id === itemId);
     if (!item) throw new Error('Inventory item not found');
@@ -211,5 +220,5 @@ export function createEquipmentController(
     nextItemNumber,
   });
 
-  return { rollDrop, equip, equipBest, compare, getSnapshot, getPersistentState };
+  return { rollDrop, equip, equipBest, dismantle, compare, getSnapshot, getPersistentState };
 }
