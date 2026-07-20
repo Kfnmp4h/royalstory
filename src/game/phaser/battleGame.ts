@@ -3,7 +3,7 @@ import { createCampaignController } from '../campaign/campaignController';
 import type { CampaignSnapshot, EncounterVisual, PersistentCampaignController } from '../campaign/campaignTypes';
 import type { CampaignPersistentState } from '../save/saveTypes';
 import { CombatBattleScene } from './CombatBattleScene';
-import { registerBattleStateReceiver } from './battleStateBridge';
+import { registerBattleCommandReceiver, registerBattleStateReceiver } from './battleStateBridge';
 
 interface ReplaceableBattleScene {
   campaign: PersistentCampaignController;
@@ -129,10 +129,17 @@ export function createBattleGame({
       if (destroyed) return;
       destroyed = true;
       unregisterBattleStateReceiver();
+      unregisterBattleCommandReceiver();
       game.destroy(true);
     },
   };
 
   const unregisterBattleStateReceiver = registerBattleStateReceiver((state) => controller.replaceState(state));
+  const unregisterBattleCommandReceiver = registerBattleCommandReceiver((command) => {
+    if (command.type === 'startBreakthrough') controller.startBreakthrough();
+    if (command.type === 'startBoss') controller.startBoss();
+    if (command.type === 'equip') controller.equip(command.itemId);
+    if (command.type === 'equipBest') controller.equipBest();
+  });
   return controller;
 }
