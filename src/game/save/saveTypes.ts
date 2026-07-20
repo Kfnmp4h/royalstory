@@ -38,7 +38,8 @@ export type PlayerCommand =
   | { readonly type: 'startBoss'; readonly expectedVersion: number }
   | { readonly type: 'equip'; readonly expectedVersion: number; readonly itemId: string }
   | { readonly type: 'equipBest'; readonly expectedVersion: number }
-  | { readonly type: 'dismantle'; readonly expectedVersion: number; readonly itemId: string };
+  | { readonly type: 'dismantle'; readonly expectedVersion: number; readonly itemId: string }
+  | { readonly type: 'dismantleLowerPower'; readonly expectedVersion: number };
 
 export interface PlayerApiRecord {
   readonly saveVersion: number;
