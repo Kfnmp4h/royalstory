@@ -67,7 +67,8 @@
   justify-content: flex-start;
 }
 
-.dismantle-action {
+.dismantle-action,
+.dismantle-confirm-action {
   min-height: 44px;
   padding: 10px 18px;
   border: 2px solid #ffb3a7;
@@ -79,13 +80,63 @@
   cursor: pointer;
 }
 
-.dismantle-action:hover {
+.dismantle-action:hover,
+.dismantle-confirm-action:hover {
   background: #96323e;
 }
 
-.dismantle-action:disabled {
+.dismantle-action:disabled,
+.dismantle-confirm-action:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+.dismantle-modal-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(2 6 18 / 78%);
+  backdrop-filter: blur(4px);
+}
+
+.dismantle-modal {
+  width: min(100%, 30rem);
+  padding: clamp(22px, 4vw, 32px);
+  border: 1px solid rgb(255 214 107 / 58%);
+  border-radius: 18px;
+  color: #fffaf0;
+  background: linear-gradient(160deg, #1d2947, #10172c 72%);
+  box-shadow: 0 28px 80px rgb(0 0 0 / 58%);
+}
+
+.dismantle-modal h2 {
+  margin-block: 4px 12px;
+}
+
+.dismantle-modal p {
+  line-height: 1.6;
+}
+
+.dismantle-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.dismantle-modal-actions > button:first-child {
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 1px solid rgb(255 255 255 / 24%);
+  border-radius: 10px;
+  color: #eef2ff;
+  background: rgb(255 255 255 / 8%);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
 }
 
 @media (max-width: 520px) {
@@ -93,7 +144,12 @@
     padding-inline: 10px;
   }
 
-  .equipment-actions > button {
+  .equipment-actions > button,
+  .dismantle-modal-actions > button {
     width: 100%;
+  }
+
+  .dismantle-modal-actions {
+    flex-direction: column-reverse;
   }
 }
