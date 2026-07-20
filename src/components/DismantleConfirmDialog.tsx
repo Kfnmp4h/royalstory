@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 
 interface DismantleConfirmDialogProps {
-  readonly itemName: string;
+  readonly itemName?: string;
+  readonly itemCount?: number;
   readonly reward: number;
   readonly busy: boolean;
   readonly onCancel: () => void;
@@ -10,12 +11,14 @@ interface DismantleConfirmDialogProps {
 
 export function DismantleConfirmDialog({
   itemName,
+  itemCount,
   reward,
   busy,
   onCancel,
   onConfirm,
 }: DismantleConfirmDialogProps) {
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
+  const isMassDismantle = itemCount !== undefined;
 
   useEffect(() => {
     cancelButtonRef.current?.focus();
@@ -46,7 +49,11 @@ export function DismantleConfirmDialog({
         <p className="eyebrow">Permanent action</p>
         <h2 id="dismantle-modal-title">Dismantle equipment?</h2>
         <p id="dismantle-modal-description">
-          Dismantle <strong>{itemName}</strong> permanently and receive <strong>{reward} Armor Stones</strong>?
+          {isMassDismantle ? (
+            <>Dismantle <strong>{itemCount} lower-power items</strong> permanently and receive <strong>{reward} Armor Stones</strong>?</>
+          ) : (
+            <>Dismantle <strong>{itemName}</strong> permanently and receive <strong>{reward} Armor Stones</strong>?</>
+          )}
         </p>
         <div className="dismantle-modal-actions">
           <button
