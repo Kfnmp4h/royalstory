@@ -100,7 +100,7 @@ export function createPlayerService(repository: PlayerRepository) {
     if (command.type === 'sync') {
       const lastActivity = Date.parse(record.lastActivityAt);
       const elapsedMs = Number.isFinite(lastActivity) ? Math.max(0, now.getTime() - lastActivity) : 0;
-      if (elapsedMs > SHORT_SYNC_LIMIT_MS) {
+      if (elapsedMs > SHORT_SYNC_LIMIT_MS && record.state.campaign.mode === 'farming') {
         const result = settleOfflineRewards(record.state, elapsedMs);
         nextState = result.nextState;
         offline = Object.freeze({
@@ -111,7 +111,7 @@ export function createPlayerService(repository: PlayerRepository) {
           drops: result.drops,
         });
       } else if (elapsedMs > 0) {
-        nextState = advanceShortSync(record.state, elapsedMs);
+        nextState = advanceShortSync(record.state, Math.min(elapsedMs, SHORT_SYNC_LIMIT_MS));
       }
     } else {
       const campaign = createCampaignController(undefined, { initialState: record.state.campaign });
