@@ -1,11 +1,15 @@
 import Phaser from 'phaser';
 import { createCampaignController } from '../campaign/campaignController';
-import type { CampaignSnapshot, PersistentCampaignController } from '../campaign/campaignTypes';
+import type { CampaignSnapshot, EncounterVisual, PersistentCampaignController } from '../campaign/campaignTypes';
 import type { CampaignPersistentState } from '../save/saveTypes';
 import { CombatBattleScene } from './CombatBattleScene';
 
 interface ReplaceableBattleScene {
   campaign: PersistentCampaignController;
+  renderedVisualName?: string;
+  pendingEnemyVisual?: EncounterVisual;
+  enemyDeathFeedbackActive: boolean;
+  nextPlayerDamageCritical: boolean;
   renderAndPublish(snapshot: CampaignSnapshot): void;
 }
 
@@ -13,6 +17,20 @@ interface CampaignProgressMarker {
   readonly chapterNumber: number;
   readonly bossUnlocked: boolean;
 }
+
+interface EncounterTransitionState {
+  renderedVisualName?: string;
+  pendingEnemyVisual?: { readonly name: string };
+  enemyDeathFeedbackActive: boolean;
+  nextPlayerDamageCritical: boolean;
+}
+
+export const resetBattleSceneEncounterTransition = (scene: EncounterTransitionState): void => {
+  scene.renderedVisualName = undefined;
+  scene.pendingEnemyVisual = undefined;
+  scene.enemyDeathFeedbackActive = false;
+  scene.nextPlayerDamageCritical = false;
+};
 
 export const shouldReplaceBattleState = (
   local: CampaignProgressMarker,
@@ -102,6 +120,7 @@ export function createBattleGame({
         { chapterNumber: state.chapterNumber, bossUnlocked: state.bossUnlocked },
       )) return;
       const campaign = createCampaignController(undefined, { initialState: state });
+      resetBattleSceneEncounterTransition(replaceableScene);
       replaceableScene.campaign = campaign;
       replaceableScene.renderAndPublish(campaign.getSnapshot());
     },
