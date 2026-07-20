@@ -26,9 +26,9 @@
 - Consumes: rendered `App` and mocked `createBattleGame`.
 - Produces: regression coverage for default selection, tab switching, keyboard navigation, and persistent Phaser mounting.
 
-- [ ] **Step 1: Write failing tests** asserting Battle is selected by default, Equipment is hidden, clicking Equipment switches panels, ArrowLeft/ArrowRight switches tabs, and `createBattleGame` remains called once.
-- [ ] **Step 2: Verify RED** with `pnpm test src/App.test.tsx`; expected failure is missing tab roles.
-- [ ] **Step 3: Commit** as `test: specify battle equipment navigation`.
+- [x] **Step 1: Write failing tests** asserting Battle is selected by default, Equipment is hidden, clicking Equipment switches panels, ArrowLeft/ArrowRight switches tabs, and `createBattleGame` remains called once.
+- [x] **Step 2: Verify RED** with `pnpm test src/App.test.tsx`; expected failure is missing tab roles.
+- [x] **Step 3: Commit** as `test: specify battle equipment navigation`.
 
 ### Task 2: Extract the Equipment tab
 
@@ -40,10 +40,10 @@
 - Consumes: campaign equipment snapshot, hero level, selected item id, busy state, and command callbacks.
 - Produces: the existing loadout, inventory, comparison, equip, and Equip Best UI without behavior changes.
 
-- [ ] **Step 1: Move only equipment presentation markup and formatting helpers into `EquipmentTab`**.
-- [ ] **Step 2: Pass explicit callbacks for selection, equip, and equip-best commands**.
-- [ ] **Step 3: Run the focused tests and typecheck**.
-- [ ] **Step 4: Commit** as `refactor: extract equipment tab`.
+- [x] **Step 1: Move only equipment presentation markup and formatting helpers into `EquipmentTab`**.
+- [x] **Step 2: Pass explicit callbacks for selection, equip, and equip-best commands**.
+- [x] **Step 3: Run the focused tests and typecheck**.
+- [x] **Step 4: Commit** as `refactor: extract equipment tab`.
 
 ### Task 3: Add accessible persistent tabs
 
@@ -56,18 +56,25 @@
 - Consumes: `AppTab = 'battle' | 'equipment'` local state.
 - Produces: an accessible two-tab navigation whose panels stay mounted and use `hidden` for visibility.
 
-- [ ] **Step 1: Implement Battle as the default selected tab**.
-- [ ] **Step 2: Add click and ArrowLeft/ArrowRight navigation with focus movement**.
-- [ ] **Step 3: Wrap current battle content and `EquipmentTab` in persistent tab panels**.
-- [ ] **Step 4: Add responsive navigation styling without changing existing panel styling**.
-- [ ] **Step 5: Run focused/full tests, typecheck, and build**.
-- [ ] **Step 6: Commit** as `feat: add battle and equipment tabs`.
+- [x] **Step 1: Implement Battle as the default selected tab**.
+- [x] **Step 2: Add click and ArrowLeft/ArrowRight navigation with focus movement**.
+- [x] **Step 3: Wrap current battle content and `EquipmentTab` in persistent tab panels**.
+- [x] **Step 4: Add responsive navigation styling without changing existing panel styling**.
+- [x] **Step 5: Run focused/full tests, typecheck, and build**.
+- [x] **Step 6: Commit** as `feat: add battle and equipment tabs`.
 
 ### Task 4: Production verification
 
 **Files:**
 - No source changes expected.
 
-- [ ] **Step 1: Verify the final GitHub commit status**.
-- [ ] **Step 2: Verify Vercel Production reaches `READY` and the production URL responds**.
-- [ ] **Step 3: Mark this plan complete only after verification evidence exists**.
+- [x] **Step 1: Verify the final GitHub commit status**.
+- [x] **Step 2: Verify Vercel Production reaches `READY` and the production URL responds**.
+- [x] **Step 3: Mark this plan complete only after verification evidence exists**.
+
+## Verification evidence
+
+- Final feature commit: `52dd0326432f8a920b48f2792f09d7f0d91c01ee`.
+- GitHub Vercel status: `success`.
+- Vercel production deployment: `dpl_BzQ2ajDzMBf35nHwX9N49RFXJH9o`, state `READY`.
+- Production URL `https://www.playroyalstory.com` responded with HTTP 200 on 2026-07-20.
