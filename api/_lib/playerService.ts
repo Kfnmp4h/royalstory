@@ -33,6 +33,13 @@ const parseExpectedVersion = (value: unknown): number => {
   return value as number;
 };
 
+const parseItemId = (value: unknown): string => {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new TypeError('Equipment item ID is required');
+  }
+  return value;
+};
+
 export function parsePlayerCommand(value: unknown): PlayerCommand {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     throw new TypeError('Player command must be an object');
@@ -46,10 +53,9 @@ export function parsePlayerCommand(value: unknown): PlayerCommand {
     case 'equipBest':
       return { type: input.type, expectedVersion };
     case 'equip':
-      if (typeof input.itemId !== 'string' || input.itemId.trim().length === 0) {
-        throw new TypeError('Equipment item ID is required');
-      }
-      return { type: 'equip', expectedVersion, itemId: input.itemId };
+      return { type: 'equip', expectedVersion, itemId: parseItemId(input.itemId) };
+    case 'dismantle':
+      return { type: 'dismantle', expectedVersion, itemId: parseItemId(input.itemId) };
     default:
       throw new TypeError('Unknown player command');
   }
@@ -109,11 +115,19 @@ export function createPlayerService(repository: PlayerRepository) {
       }
     } else {
       const campaign = createCampaignController(undefined, { initialState: record.state.campaign });
+      let armorStones = record.state.armorStones;
       if (command.type === 'startBreakthrough') campaign.startBreakthrough();
       if (command.type === 'startBoss') campaign.startBoss();
       if (command.type === 'equip') campaign.equip(command.itemId);
       if (command.type === 'equipBest') campaign.equipBest();
-      nextState = Object.freeze({ ...record.state, campaign: campaign.getPersistentState() });
+      if (command.type === 'dismantle') {
+        armorStones += campaign.dismantle(command.itemId).armorStones;
+      }
+      nextState = Object.freeze({
+        ...record.state,
+        armorStones,
+        campaign: campaign.getPersistentState(),
+      });
     }
 
     const result = await repository.savePlayerState(userId, command.expectedVersion, nextState, now);
