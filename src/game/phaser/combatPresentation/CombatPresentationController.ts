@@ -12,6 +12,7 @@ export interface DamageNumberHandle {
 export interface CombatPresentationPort {
   hasEffect(key: CombatEffectKey): boolean;
   playEffect(key: CombatEffectKey, actorId: ActorId): void;
+  playPlayerAttack(actorId: ActorId): void;
   flash(actorId: ActorId, critical: boolean): void;
   showDamageNumber(
     handle: DamageNumberHandle,
@@ -127,10 +128,12 @@ export function createCombatPresentationController(
           case 'attack_missed':
             showMiss(event.targetId);
             break;
+          case 'attack_started':
+            if (event.actorId === 'player') port.playPlayerAttack(event.actorId);
+            break;
           case 'enemy_defeated':
             presentEnemyDeath();
             break;
-          case 'attack_started':
           case 'health_changed':
             break;
         }

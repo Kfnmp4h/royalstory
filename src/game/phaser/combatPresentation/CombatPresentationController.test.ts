@@ -23,10 +23,12 @@ function createFakePort(missing: readonly CombatEffectKey[] = []) {
   const shakes: Array<{ durationMs: number; intensity: number }> = [];
   const warnings: CombatEffectKey[] = [];
   const deaths: Array<() => void> = [];
+  const playerAttacks: ActorId[] = [];
 
   const port: CombatPresentationPort = {
     hasEffect: (key) => !unavailable.has(key),
     playEffect: (key, actorId) => effects.push({ key, actorId }),
+    playPlayerAttack: (actorId) => playerAttacks.push(actorId),
     flash: (actorId, critical) => flashes.push({ actorId, critical }),
     showDamageNumber: (handle, actorId, text, critical, onComplete) => {
       damageNumbers.push({ handle, actorId, text, critical, complete: onComplete });
@@ -38,10 +40,38 @@ function createFakePort(missing: readonly CombatEffectKey[] = []) {
     warnMissingEffect: (key) => warnings.push(key),
   };
 
-  return { port, effects, flashes, damageNumbers, misses, health, shakes, warnings, deaths };
+  return {
+    port,
+    effects,
+    flashes,
+    damageNumbers,
+    misses,
+    health,
+    shakes,
+    warnings,
+    deaths,
+    playerAttacks,
+  };
 }
 
 describe('CombatPresentationController', () => {
+  it('starts the same character animation only for player attack starts', () => {
+    const fake = createFakePort();
+    const controller = createCombatPresentationController(fake.port);
+
+    controller.present([
+      { type: 'attack_started', actorId: 'player', targetId: 'enemy', timestampMs: 100 },
+      { type: 'hit_landed', actorId: 'player', targetId: 'enemy', damage: 18, critical: false, resultingHealth: 72, timestampMs: 100 },
+      { type: 'attack_started', actorId: 'player', targetId: 'enemy', timestampMs: 200 },
+      { type: 'critical_hit_landed', actorId: 'player', targetId: 'enemy', damage: 36, critical: true, resultingHealth: 36, timestampMs: 200 },
+      { type: 'attack_started', actorId: 'player', targetId: 'enemy', timestampMs: 300 },
+      { type: 'attack_missed', actorId: 'player', targetId: 'enemy', damage: 0, critical: false, resultingHealth: 36, timestampMs: 300 },
+      { type: 'attack_started', actorId: 'enemy', targetId: 'player', timestampMs: 400 },
+    ]);
+
+    expect(fake.playerAttacks).toEqual(['player', 'player', 'player']);
+  });
+
   it('coordinates a normal hit without shaking below the strong-hit threshold', () => {
     const fake = createFakePort();
     const controller = createCombatPresentationController(fake.port);
