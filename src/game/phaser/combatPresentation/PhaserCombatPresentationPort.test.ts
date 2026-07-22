@@ -5,6 +5,7 @@ import {
   type PhaserCombatEffectSprite,
   type PhaserCombatFeedbackText,
 } from './PhaserCombatPresentationPort';
+import type { CombatEffectKey } from './effectManifest';
 
 const createEffectSprite = () => {
   const destroy = vi.fn();
@@ -34,10 +35,10 @@ const createFeedbackText = (): PhaserCombatFeedbackText => {
 };
 
 const createOptions = () => ({
-  animationExists: (key: string) => key === 'royalstory-impact-basic',
+  animationExists: vi.fn<(key: string) => boolean>((key) => key === 'royalstory-impact-basic'),
   createSprite: vi.fn(() => createEffectSprite().sprite),
   getActorPosition: vi.fn(() => ({ x: 690, y: 282 })),
-  playNativeEffect: vi.fn(() => false),
+  playNativeEffect: vi.fn<(key: CombatEffectKey, x: number, y: number) => boolean>(() => false),
   flashActor: vi.fn(),
   createFeedbackText: vi.fn(() => createFeedbackText()),
   tweenFeedbackText: vi.fn((_text: PhaserCombatFeedbackText, config: { onComplete: () => void }) => config.onComplete()),
@@ -66,7 +67,7 @@ describe('PhaserCombatPresentationPort', () => {
   it('keeps enemy-death on the registered Phaser sprite path', () => {
     const effect = createEffectSprite();
     const options = createOptions();
-    options.animationExists = (key) => key === 'royalstory-enemy-death';
+    options.animationExists.mockImplementation((key) => key === 'royalstory-enemy-death');
     options.createSprite.mockReturnValue(effect.sprite);
     const port = createPhaserCombatPresentationPort(options);
 
