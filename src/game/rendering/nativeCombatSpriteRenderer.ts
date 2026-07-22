@@ -7,10 +7,17 @@ const WORLD_WIDTH = 960;
 const WORLD_HEIGHT = 540;
 const EFFECT_VERTICAL_OFFSET = 70;
 
-interface ActiveSlash {
+interface ActiveEffect {
   readonly x: number;
   readonly y: number;
   elapsedMs: number;
+}
+
+interface NativeEffectRuntime {
+  readonly image: HTMLImageElement;
+  loaded: boolean;
+  failed: boolean;
+  active?: ActiveEffect;
 }
 
 export const NATIVE_COMBAT_EFFECT_KEYS = [
@@ -52,8 +59,6 @@ export function createNativeCombatSpriteRenderer({
   onError,
   dependencies = defaultDependencies,
 }: CreateNativeCombatSpriteRendererOptions): NativeCombatSpriteRenderer {
-  const definition = COMBAT_EFFECT_MANIFEST['slash-basic'];
-  const frameDurationMs = 1_000 / definition.frameRate;
   const canvas = dependencies.createCanvas();
   canvas.width = WORLD_WIDTH;
   canvas.height = WORLD_HEIGHT;
@@ -62,71 +67,89 @@ export function createNativeCombatSpriteRenderer({
   parent.append(canvas);
 
   const context = canvas.getContext('2d');
-  const image = dependencies.createImage();
-  let activeSlash: ActiveSlash | undefined;
+  const runtimes = new Map<NativeCombatEffectKey, NativeEffectRuntime>();
   let destroyed = false;
-  let loaded = false;
-  let failed = false;
-
-  const reportFailure = (): void => {
-    if (failed || destroyed) return;
-    failed = true;
-    activeSlash = undefined;
-    onError(new Error(`Failed to load native combat sprite: ${definition.url}`));
-  };
 
   const render = (): void => {
-    if (destroyed || failed || !context) return;
+    if (destroyed || !context) return;
     context.clearRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
-    if (!loaded || !activeSlash) return;
 
-    const frameIndex = Math.floor(activeSlash.elapsedMs / frameDurationMs);
-    if (frameIndex >= definition.frameCount) {
-      activeSlash = undefined;
-      return;
+    for (const key of NATIVE_COMBAT_EFFECT_KEYS) {
+      const runtime = runtimes.get(key);
+      const active = runtime?.active;
+      if (!runtime || runtime.failed || !runtime.loaded || !active) continue;
+
+      const definition = COMBAT_EFFECT_MANIFEST[key];
+      const frameDurationMs = 1_000 / definition.frameRate;
+      const frameIndex = Math.floor(active.elapsedMs / frameDurationMs);
+      if (frameIndex >= definition.frameCount) {
+        runtime.active = undefined;
+        continue;
+      }
+
+      const width = definition.frameWidth * definition.scale;
+      const height = definition.frameHeight * definition.scale;
+      context.drawImage(
+        runtime.image,
+        frameIndex * definition.frameWidth,
+        0,
+        definition.frameWidth,
+        definition.frameHeight,
+        active.x - (width * definition.origin.x),
+        active.y - EFFECT_VERTICAL_OFFSET - (height * definition.origin.y),
+        width,
+        height,
+      );
     }
-
-    const width = definition.frameWidth * definition.scale;
-    const height = definition.frameHeight * definition.scale;
-    context.drawImage(
-      image,
-      frameIndex * definition.frameWidth,
-      0,
-      definition.frameWidth,
-      definition.frameHeight,
-      activeSlash.x - (width * definition.origin.x),
-      activeSlash.y - EFFECT_VERTICAL_OFFSET - (height * definition.origin.y),
-      width,
-      height,
-    );
   };
 
-  image.onload = () => {
-    if (destroyed || failed) return;
-    loaded = true;
-    render();
-  };
-  image.onerror = reportFailure;
-  image.src = definition.url;
+  for (const key of NATIVE_COMBAT_EFFECT_KEYS) {
+    const definition = COMBAT_EFFECT_MANIFEST[key];
+    const image = dependencies.createImage();
+    const runtime: NativeEffectRuntime = { image, loaded: false, failed: false };
+    runtimes.set(key, runtime);
+
+    image.onload = () => {
+      if (destroyed || runtime.failed) return;
+      runtime.loaded = true;
+      render();
+    };
+    image.onerror = () => {
+      if (destroyed || runtime.failed) return;
+      runtime.failed = true;
+      runtime.active = undefined;
+      onError(new Error(`Failed to load native combat sprite: ${definition.url}`));
+      render();
+    };
+    image.src = definition.url;
+  }
 
   return {
     playEffect(key, x, y): void {
-      if (destroyed || failed) return;
-      if (key !== 'slash-basic') return;
-      activeSlash = { x, y, elapsedMs: 0 };
+      if (destroyed) return;
+      const runtime = runtimes.get(key);
+      if (!runtime || runtime.failed) return;
+      runtime.active = { x, y, elapsedMs: 0 };
       render();
     },
     advance(deltaMs): void {
-      if (destroyed || failed || !activeSlash) return;
-      activeSlash.elapsedMs += Math.max(0, deltaMs);
-      render();
+      if (destroyed) return;
+      let hasActiveEffect = false;
+      for (const runtime of runtimes.values()) {
+        if (runtime.failed || !runtime.active) continue;
+        runtime.active.elapsedMs += Math.max(0, deltaMs);
+        hasActiveEffect = true;
+      }
+      if (hasActiveEffect) render();
     },
     destroy(): void {
       if (destroyed) return;
       destroyed = true;
-      activeSlash = undefined;
-      image.onload = null;
-      image.onerror = null;
+      for (const runtime of runtimes.values()) {
+        runtime.active = undefined;
+        runtime.image.onload = null;
+        runtime.image.onerror = null;
+      }
       canvas.remove();
     },
   };
