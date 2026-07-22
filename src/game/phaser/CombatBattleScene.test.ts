@@ -44,9 +44,9 @@ const createText = (): PhaserCombatFeedbackText => {
 };
 
 describe('CombatBattleScene presentation runtime', () => {
-  it('routes only slash-basic to the native renderer', () => {
+  it('routes only slash and impact sprites to the native renderer', () => {
     const nativeRenderer = {
-      playSlash: vi.fn(),
+      playEffect: vi.fn(),
       advance: vi.fn(),
       destroy: vi.fn(),
     };
@@ -56,14 +56,20 @@ describe('CombatBattleScene presentation runtime', () => {
     }).createPresentationPortOptions();
 
     expect(options.playNativeEffect('slash-basic', 270, 414)).toBe(true);
-    expect(options.playNativeEffect('impact-basic', 690, 414)).toBe(false);
-    expect(nativeRenderer.playSlash).toHaveBeenCalledOnce();
-    expect(nativeRenderer.playSlash).toHaveBeenCalledWith(270, 414);
+    expect(options.playNativeEffect('impact-basic', 690, 414)).toBe(true);
+    expect(options.playNativeEffect('impact-critical', 690, 414)).toBe(true);
+    expect(options.playNativeEffect('enemy-death', 690, 414)).toBe(false);
+    expect(options.playNativeEffect('death-particles', 690, 414)).toBe(false);
+    expect(nativeRenderer.playEffect.mock.calls).toEqual([
+      ['slash-basic', 270, 414],
+      ['impact-basic', 690, 414],
+      ['impact-critical', 690, 414],
+    ]);
   });
 
   it('advances the native renderer with the clamped presentation delta', () => {
     const nativeRenderer = {
-      playSlash: vi.fn(),
+      playEffect: vi.fn(),
       advance: vi.fn(),
       destroy: vi.fn(),
     };

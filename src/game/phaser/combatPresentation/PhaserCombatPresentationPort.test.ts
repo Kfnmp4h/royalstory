@@ -48,34 +48,37 @@ const createOptions = () => ({
 });
 
 describe('PhaserCombatPresentationPort', () => {
-  it('routes slash-basic to the native effect renderer without creating a Phaser sprite', () => {
-    const options = createOptions();
-    options.playNativeEffect.mockReturnValue(true);
-    const port = createPhaserCombatPresentationPort(options);
+  it.each(['slash-basic', 'impact-basic', 'impact-critical'] as const)(
+    'routes %s to the native effect renderer without creating a Phaser sprite',
+    (key) => {
+      const options = createOptions();
+      options.playNativeEffect.mockImplementation((candidate) => candidate === key);
+      const port = createPhaserCombatPresentationPort(options);
 
-    expect(port.hasEffect('slash-basic')).toBe(true);
-    port.playEffect('slash-basic', 'player');
+      expect(port.hasEffect(key)).toBe(true);
+      port.playEffect(key, key === 'slash-basic' ? 'player' : 'enemy');
 
-    expect(options.getActorPosition).toHaveBeenCalledWith('player');
-    expect(options.playNativeEffect).toHaveBeenCalledWith('slash-basic', 690, 282);
-    expect(options.createSprite).not.toHaveBeenCalled();
-  });
+      expect(options.playNativeEffect).toHaveBeenCalledWith(key, 690, 282);
+      expect(options.createSprite).not.toHaveBeenCalled();
+    },
+  );
 
-  it('plays a registered manifest effect at the requested actor position', () => {
+  it('keeps enemy-death on the registered Phaser sprite path', () => {
     const effect = createEffectSprite();
     const options = createOptions();
+    options.animationExists = (key) => key === 'royalstory-enemy-death';
     options.createSprite.mockReturnValue(effect.sprite);
     const port = createPhaserCombatPresentationPort(options);
 
-    expect(port.hasEffect('impact-basic')).toBe(true);
+    expect(port.hasEffect('enemy-death')).toBe(true);
 
-    port.playEffect('impact-basic', 'enemy');
+    port.playEffect('enemy-death', 'enemy');
 
-    expect(options.createSprite).toHaveBeenCalledWith(690, 282, 'impact-basic');
+    expect(options.createSprite).toHaveBeenCalledWith(690, 282, 'enemy-death');
     expect(effect.setOrigin).toHaveBeenCalledWith(0.5, 0.5);
     expect(effect.setScale).toHaveBeenCalledWith(2);
     expect(effect.setDepth).toHaveBeenCalledWith(25);
-    expect(effect.play).toHaveBeenCalledWith('royalstory-impact-basic');
+    expect(effect.play).toHaveBeenCalledWith('royalstory-enemy-death');
     expect(effect.once).toHaveBeenCalledWith('animationcomplete', expect.any(Function));
     expect(effect.destroy).toHaveBeenCalledOnce();
   });
