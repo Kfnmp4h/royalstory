@@ -15,6 +15,7 @@ const ENEMY_POSITION = { x: 690, y: 414 } as const;
 export class BattleScene extends Phaser.Scene {
   private readonly campaign = createCampaignController();
   private playerContainer?: Phaser.GameObjects.Container;
+  protected playerFigure?: Phaser.GameObjects.Graphics;
   private enemyContainer?: Phaser.GameObjects.Container;
   private playerHealthFill?: Phaser.GameObjects.Graphics;
   private enemyHealthFill?: Phaser.GameObjects.Graphics;
@@ -45,6 +46,7 @@ export class BattleScene extends Phaser.Scene {
 
       const player = this.drawAri();
       this.playerContainer = player.container;
+      this.playerFigure = player.figure;
       this.playerHealthFill = player.healthFill;
 
       this.statusText = this.add.text(WORLD_WIDTH / 2, 28, '', {
@@ -214,7 +216,11 @@ export class BattleScene extends Phaser.Scene {
     tree.fillCircle(-10, -104, 22);
   }
 
-  private drawAri(): { container: Phaser.GameObjects.Container; healthFill: Phaser.GameObjects.Graphics } {
+  private drawAri(): {
+    container: Phaser.GameObjects.Container;
+    healthFill: Phaser.GameObjects.Graphics;
+    figure: Phaser.GameObjects.Graphics;
+  } {
     const shadow = this.add.graphics();
     shadow.fillStyle(0x183829, 0.38).fillEllipse(0, 19, 108, 24);
 
@@ -254,7 +260,7 @@ export class BattleScene extends Phaser.Scene {
       healthFill,
     ]).setDepth(10);
 
-    return { container, healthFill };
+    return { container, healthFill, figure };
   }
 
   private drawEnemy(visual: EncounterVisual): { container: Phaser.GameObjects.Container; healthFill: Phaser.GameObjects.Graphics } {

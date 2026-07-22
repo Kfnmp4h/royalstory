@@ -47,6 +47,7 @@ describe('CombatBattleScene presentation runtime', () => {
   it('routes only slash and impact sprites to the native renderer', () => {
     const nativeRenderer = {
       playEffect: vi.fn(),
+      playPlayerAttack: vi.fn(() => true),
       advance: vi.fn(),
       destroy: vi.fn(),
     };
@@ -70,6 +71,7 @@ describe('CombatBattleScene presentation runtime', () => {
   it('advances the native renderer with the clamped presentation delta', () => {
     const nativeRenderer = {
       playEffect: vi.fn(),
+      playPlayerAttack: vi.fn(() => true),
       advance: vi.fn(),
       destroy: vi.fn(),
     };
@@ -86,6 +88,63 @@ describe('CombatBattleScene presentation runtime', () => {
     expect(nativeRenderer.advance).toHaveBeenCalledWith(COMBAT_BALANCE.maxFrameContributionMs);
   });
 
+  it('hides only Ari figure while native player attack playback is active', () => {
+    let complete: (() => void) | undefined;
+    const nativeRenderer = {
+      playEffect: vi.fn(),
+      playPlayerAttack: vi.fn((_x: number, _y: number, onComplete: () => void) => {
+        complete = onComplete;
+        return true;
+      }),
+      advance: vi.fn(),
+      destroy: vi.fn(),
+    };
+    const playerFigure = { setVisible: vi.fn() };
+    const scene = new CombatBattleScene(vi.fn(), vi.fn(), nativeRenderer);
+    Object.assign(scene, {
+      playerContainer: { x: 270, y: 414 },
+      playerFigure,
+    });
+    const options = (scene as unknown as {
+      createPresentationPortOptions(): PhaserCombatPresentationPortOptions & {
+        playPlayerAttack(actorId: 'player' | 'enemy'): void;
+      };
+    }).createPresentationPortOptions();
+
+    options.playPlayerAttack('player');
+
+    expect(nativeRenderer.playPlayerAttack).toHaveBeenCalledWith(270, 414, expect.any(Function));
+    expect(playerFigure.setVisible).toHaveBeenCalledWith(false);
+    complete?.();
+    expect(playerFigure.setVisible).toHaveBeenLastCalledWith(true);
+  });
+
+  it('keeps Ari visible when native player playback is unavailable and ignores enemy attacks', () => {
+    const nativeRenderer = {
+      playEffect: vi.fn(),
+      playPlayerAttack: vi.fn(() => false),
+      advance: vi.fn(),
+      destroy: vi.fn(),
+    };
+    const playerFigure = { setVisible: vi.fn() };
+    const scene = new CombatBattleScene(vi.fn(), vi.fn(), nativeRenderer);
+    Object.assign(scene, {
+      playerContainer: { x: 270, y: 414 },
+      playerFigure,
+    });
+    const options = (scene as unknown as {
+      createPresentationPortOptions(): PhaserCombatPresentationPortOptions & {
+        playPlayerAttack(actorId: 'player' | 'enemy'): void;
+      };
+    }).createPresentationPortOptions();
+
+    options.playPlayerAttack('player');
+    options.playPlayerAttack('enemy');
+
+    expect(nativeRenderer.playPlayerAttack).toHaveBeenCalledOnce();
+    expect(playerFigure.setVisible).not.toHaveBeenCalled();
+  });
+
   it('routes critical hits and health through the controller and Phaser port', () => {
     const options: PhaserCombatPresentationPortOptions = {
       animationExists: vi.fn(() => true),
@@ -94,6 +153,7 @@ describe('CombatBattleScene presentation runtime', () => {
         ? { x: 270, y: 414 }
         : { x: 690, y: 414 }),
       playNativeEffect: vi.fn(() => false),
+      playPlayerAttack: vi.fn(),
       flashActor: vi.fn(),
       createFeedbackText: vi.fn(() => createText()),
       tweenFeedbackText: vi.fn(),

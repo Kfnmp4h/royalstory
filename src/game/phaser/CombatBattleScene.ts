@@ -163,6 +163,18 @@ export class CombatBattleScene extends BattleScene {
         this.nativeRenderer.playEffect(key, x, y);
         return true;
       },
+      playPlayerAttack: (actorId) => {
+        if (actorId !== 'player' || !this.nativeRenderer) return;
+        const figure = this.playerFigure;
+        const container = this.getActorContainer('player');
+        const position = container
+          ? { x: container.x, y: container.y }
+          : PLAYER_POSITION;
+        const started = this.nativeRenderer.playPlayerAttack(position.x, position.y, () => {
+          figure?.setVisible(true);
+        });
+        if (started) figure?.setVisible(false);
+      },
       flashActor: (actorId, critical) => this.flashActor(actorId, critical),
       createFeedbackText: (kind) => this.createFeedbackText(kind),
       tweenFeedbackText: (text, tween) => {

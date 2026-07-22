@@ -39,6 +39,7 @@ const createOptions = () => ({
   createSprite: vi.fn(() => createEffectSprite().sprite),
   getActorPosition: vi.fn(() => ({ x: 690, y: 282 })),
   playNativeEffect: vi.fn<(key: CombatEffectKey, x: number, y: number) => boolean>(() => false),
+  playPlayerAttack: vi.fn(),
   flashActor: vi.fn(),
   createFeedbackText: vi.fn(() => createFeedbackText()),
   tweenFeedbackText: vi.fn((_text: PhaserCombatFeedbackText, config: { onComplete: () => void }) => config.onComplete()),

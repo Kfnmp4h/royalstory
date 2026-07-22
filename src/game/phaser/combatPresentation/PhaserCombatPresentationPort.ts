@@ -42,6 +42,7 @@ export interface PhaserCombatPresentationPortOptions {
   createSprite(x: number, y: number, textureKey: string): PhaserCombatEffectSprite;
   getActorPosition(actorId: ActorId): Readonly<{ x: number; y: number }>;
   playNativeEffect(key: CombatEffectKey, x: number, y: number): boolean;
+  playPlayerAttack(actorId: ActorId): void;
   flashActor(actorId: ActorId, critical: boolean): void;
   createFeedbackText(kind: PhaserCombatFeedbackKind): PhaserCombatFeedbackText;
   tweenFeedbackText(text: PhaserCombatFeedbackText, tween: PhaserCombatFeedbackTween): void;
@@ -117,6 +118,10 @@ export function createPhaserCombatPresentationPort(
       sprite.setDepth(EFFECT_DEPTH);
       sprite.play(definition.animationKey);
       sprite.once('animationcomplete', () => sprite.destroy());
+    },
+
+    playPlayerAttack(actorId): void {
+      options.playPlayerAttack(actorId);
     },
 
     flash(actorId, critical): void {
