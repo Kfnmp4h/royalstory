@@ -4,7 +4,19 @@ import {
   type NativeCombatEffectKey,
 } from './nativeCombatSpriteRenderer';
 
-const createHarness = () => {
+const playerMetadataSource = {
+  frames: Object.fromEntries(Array.from({ length: 25 }, (_, index) => [String(index), {
+    x: (index % 5) * 256,
+    y: Math.floor(index / 5) * 256,
+    w: 256,
+    h: 256,
+    duration: 1,
+  }])),
+};
+
+const createHarness = (
+  loadPlayerAttackMetadata = vi.fn(async (): Promise<unknown> => playerMetadataSource),
+) => {
   const clearRect = vi.fn();
   const drawImage = vi.fn();
   const context = { clearRect, drawImage } as unknown as CanvasRenderingContext2D;
@@ -23,6 +35,7 @@ const createHarness = () => {
         createdImages.push(image);
         return image;
       },
+      loadPlayerAttackMetadata,
     },
   });
   const images = {
@@ -31,7 +44,9 @@ const createHarness = () => {
     'impact-critical': createdImages[2]!,
   } satisfies Record<NativeCombatEffectKey, HTMLImageElement>;
 
-  return { canvas, clearRect, drawImage, images, onError, parent, renderer };
+  const playerImage = createdImages[3]!;
+
+  return { canvas, clearRect, drawImage, images, onError, parent, playerImage, renderer };
 };
 
 describe('createNativeCombatSpriteRenderer', () => {
@@ -49,6 +64,100 @@ describe('createNativeCombatSpriteRenderer', () => {
     expect(drawImage).toHaveBeenLastCalledWith(image, 0, 0, 48, 48, 222, 296, 96, 96);
     renderer.advance(50);
     expect(drawImage).toHaveBeenLastCalledWith(image, 48, 0, 48, 48, 222, 296, 96, 96);
+  });
+
+  it('draws all player attack frames over 550 ms and completes once', async () => {
+    const { drawImage, playerImage, renderer } = createHarness();
+    const complete = vi.fn();
+    await Promise.resolve();
+    playerImage.onload?.(new Event('load'));
+
+    expect(renderer.playPlayerAttack(270, 414, complete)).toBe(true);
+    expect(drawImage).toHaveBeenLastCalledWith(
+      playerImage, 0, 0, 256, 256, 142, 158, 256, 256,
+    );
+
+    renderer.advance(549);
+    expect(drawImage).toHaveBeenLastCalledWith(
+      playerImage, 1024, 1024, 256, 256, 142, 158, 256, 256,
+    );
+    expect(complete).not.toHaveBeenCalled();
+
+    renderer.advance(1);
+    expect(complete).toHaveBeenCalledOnce();
+  });
+
+  it('restarts player attack at frame zero and completes the replaced callback', async () => {
+    const { drawImage, playerImage, renderer } = createHarness();
+    const firstComplete = vi.fn();
+    const secondComplete = vi.fn();
+    await Promise.resolve();
+    playerImage.onload?.(new Event('load'));
+    renderer.playPlayerAttack(270, 414, firstComplete);
+    renderer.advance(300);
+    drawImage.mockClear();
+
+    expect(renderer.playPlayerAttack(270, 414, secondComplete)).toBe(true);
+
+    expect(firstComplete).toHaveBeenCalledOnce();
+    expect(secondComplete).not.toHaveBeenCalled();
+    expect(drawImage).toHaveBeenLastCalledWith(
+      playerImage, 0, 0, 256, 256, 142, 158, 256, 256,
+    );
+  });
+
+  it('draws the player below simultaneous slash and impact effects', async () => {
+    const { drawImage, images, playerImage, renderer } = createHarness();
+    await Promise.resolve();
+    playerImage.onload?.(new Event('load'));
+    images['slash-basic'].onload?.(new Event('load'));
+    images['impact-basic'].onload?.(new Event('load'));
+    renderer.playPlayerAttack(270, 414, vi.fn());
+    renderer.playEffect('slash-basic', 270, 414);
+    renderer.playEffect('impact-basic', 690, 414);
+    drawImage.mockClear();
+
+    renderer.advance(10);
+
+    expect(drawImage.mock.calls.map((call) => call[0])).toEqual([
+      playerImage,
+      images['slash-basic'],
+      images['impact-basic'],
+    ]);
+  });
+
+  it('keeps effects available when the player sprite fails', async () => {
+    const { drawImage, images, onError, playerImage, renderer } = createHarness();
+    await Promise.resolve();
+    playerImage.onerror?.(new Event('error'));
+    playerImage.onerror?.(new Event('error'));
+    images['slash-basic'].onload?.(new Event('load'));
+
+    expect(renderer.playPlayerAttack(270, 414, vi.fn())).toBe(false);
+    renderer.playEffect('slash-basic', 270, 414);
+
+    expect(onError).toHaveBeenCalledOnce();
+    expect(onError).toHaveBeenCalledWith(new Error(
+      'Failed to load native player attack sprite: assets/characters/base-male-attack.png',
+    ));
+    expect(drawImage).toHaveBeenLastCalledWith(
+      images['slash-basic'], 0, 0, 48, 48, 222, 296, 96, 96,
+    );
+  });
+
+  it('reports invalid player metadata once and retains the Phaser fallback', async () => {
+    const { onError, playerImage, renderer } = createHarness(
+      vi.fn(async () => ({ frames: {} })),
+    );
+    playerImage.onload?.(new Event('load'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(renderer.playPlayerAttack(270, 414, vi.fn())).toBe(false);
+    expect(onError).toHaveBeenCalledOnce();
+    expect(onError).toHaveBeenCalledWith(new Error(
+      'Failed to load native player attack metadata: Invalid player attack metadata',
+    ));
   });
 
   it('removes slash after the final frame duration', () => {
@@ -154,20 +263,29 @@ describe('createNativeCombatSpriteRenderer', () => {
     );
   });
 
-  it('removes its canvas, detaches every image, and ignores calls after destroy', () => {
-    const { canvas, drawImage, images, parent, renderer } = createHarness();
+  it('removes its canvas, restores an active player, detaches every image, and ignores calls after destroy', async () => {
+    const { canvas, drawImage, images, parent, playerImage, renderer } = createHarness();
+    const complete = vi.fn();
+    await Promise.resolve();
+    playerImage.onload?.(new Event('load'));
+    renderer.playPlayerAttack(270, 414, complete);
+    drawImage.mockClear();
     expect(parent.contains(canvas)).toBe(true);
 
     renderer.destroy();
     renderer.destroy();
     renderer.playEffect('impact-critical', 690, 414);
+    expect(renderer.playPlayerAttack(270, 414, vi.fn())).toBe(false);
     renderer.advance(50);
 
     expect(parent.contains(canvas)).toBe(false);
+    expect(complete).toHaveBeenCalledOnce();
     expect(drawImage).not.toHaveBeenCalled();
     for (const image of Object.values(images)) {
       expect(image.onload).toBeNull();
       expect(image.onerror).toBeNull();
     }
+    expect(playerImage.onload).toBeNull();
+    expect(playerImage.onerror).toBeNull();
   });
 });
