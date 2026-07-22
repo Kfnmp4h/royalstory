@@ -1,4 +1,7 @@
-import { COMBAT_EFFECT_MANIFEST } from '../phaser/combatPresentation/effectManifest';
+import {
+  COMBAT_EFFECT_MANIFEST,
+  type CombatEffectKey,
+} from '../phaser/combatPresentation/effectManifest';
 
 const WORLD_WIDTH = 960;
 const WORLD_HEIGHT = 540;
@@ -10,8 +13,20 @@ interface ActiveSlash {
   elapsedMs: number;
 }
 
+export const NATIVE_COMBAT_EFFECT_KEYS = [
+  'slash-basic',
+  'impact-basic',
+  'impact-critical',
+] as const;
+
+export type NativeCombatEffectKey = typeof NATIVE_COMBAT_EFFECT_KEYS[number];
+
+export const isNativeCombatEffectKey = (key: CombatEffectKey): key is NativeCombatEffectKey => (
+  NATIVE_COMBAT_EFFECT_KEYS.includes(key as NativeCombatEffectKey)
+);
+
 export interface NativeCombatSpriteRenderer {
-  playSlash(x: number, y: number): void;
+  playEffect(key: NativeCombatEffectKey, x: number, y: number): void;
   advance(deltaMs: number): void;
   destroy(): void;
 }
@@ -95,8 +110,9 @@ export function createNativeCombatSpriteRenderer({
   image.src = definition.url;
 
   return {
-    playSlash(x, y): void {
+    playEffect(key, x, y): void {
       if (destroyed || failed) return;
+      if (key !== 'slash-basic') return;
       activeSlash = { x, y, elapsedMs: 0 };
       render();
     },

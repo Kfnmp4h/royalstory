@@ -2,7 +2,10 @@ import Phaser from 'phaser';
 import { COMBAT_BALANCE } from '../balance';
 import type { PersistentCampaignController, EncounterVisual } from '../campaign/campaignTypes';
 import type { ActorId, CombatEvent, CombatSnapshot } from '../types';
-import type { NativeCombatSpriteRenderer } from '../rendering/nativeCombatSpriteRenderer';
+import {
+  isNativeCombatEffectKey,
+  type NativeCombatSpriteRenderer,
+} from '../rendering/nativeCombatSpriteRenderer';
 import { BattleScene } from './BattleScene';
 import type { BattleStatus } from './battleGame';
 import { preloadCombatEffects, registerCombatAnimations } from './combatPresentation/combatAssets';
@@ -156,8 +159,8 @@ export class CombatBattleScene extends BattleScene {
             : ENEMY_POSITION;
       },
       playNativeEffect: (key, x, y) => {
-        if (key !== 'slash-basic' || !this.nativeRenderer) return false;
-        this.nativeRenderer.playSlash(x, y);
+        if (!isNativeCombatEffectKey(key) || !this.nativeRenderer) return false;
+        this.nativeRenderer.playEffect(key, x, y);
         return true;
       },
       flashActor: (actorId, critical) => this.flashActor(actorId, critical),

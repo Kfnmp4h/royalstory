@@ -5,6 +5,7 @@ import type {
 } from './CombatPresentationController';
 import { COMBAT_EFFECT_MANIFEST, type CombatEffectKey } from './effectManifest';
 import { COMBAT_PRESENTATION } from './presentationConstants';
+import { isNativeCombatEffectKey } from '../../rendering/nativeCombatSpriteRenderer';
 
 const EFFECT_DEPTH = 25;
 const FEEDBACK_Y_OFFSET = 132;
@@ -100,7 +101,7 @@ export function createPhaserCombatPresentationPort(
 
   return {
     hasEffect(key): boolean {
-      return key === 'slash-basic'
+      return isNativeCombatEffectKey(key)
         || options.animationExists(COMBAT_EFFECT_MANIFEST[key].animationKey);
     },
 
