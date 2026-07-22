@@ -37,6 +37,7 @@ const createOptions = () => ({
   animationExists: (key: string) => key === 'royalstory-impact-basic',
   createSprite: vi.fn(() => createEffectSprite().sprite),
   getActorPosition: vi.fn(() => ({ x: 690, y: 282 })),
+  playNativeEffect: vi.fn(() => false),
   flashActor: vi.fn(),
   createFeedbackText: vi.fn(() => createFeedbackText()),
   tweenFeedbackText: vi.fn((_text: PhaserCombatFeedbackText, config: { onComplete: () => void }) => config.onComplete()),
@@ -47,6 +48,19 @@ const createOptions = () => ({
 });
 
 describe('PhaserCombatPresentationPort', () => {
+  it('routes slash-basic to the native effect renderer without creating a Phaser sprite', () => {
+    const options = createOptions();
+    options.playNativeEffect.mockReturnValue(true);
+    const port = createPhaserCombatPresentationPort(options);
+
+    expect(port.hasEffect('slash-basic')).toBe(true);
+    port.playEffect('slash-basic', 'player');
+
+    expect(options.getActorPosition).toHaveBeenCalledWith('player');
+    expect(options.playNativeEffect).toHaveBeenCalledWith('slash-basic', 690, 282);
+    expect(options.createSprite).not.toHaveBeenCalled();
+  });
+
   it('plays a registered manifest effect at the requested actor position', () => {
     const effect = createEffectSprite();
     const options = createOptions();
