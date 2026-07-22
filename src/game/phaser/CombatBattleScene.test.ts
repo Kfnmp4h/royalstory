@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { COMBAT_BALANCE } from '../balance';
 import type { CombatEvent } from '../types';
 import type {
   PhaserCombatEffectSprite,
@@ -7,9 +8,11 @@ import type {
 } from './combatPresentation/PhaserCombatPresentationPort';
 import {
   createCombatBattlePresentationController,
+  CombatBattleScene,
   shouldAnimateLegacyCombatEvent,
   shouldCompleteEnemyPresentationDeath,
 } from './CombatBattleScene';
+import { BattleScene } from './BattleScene';
 
 vi.mock('phaser', () => ({
   default: { Scene: class Scene {} },
@@ -41,6 +44,42 @@ const createText = (): PhaserCombatFeedbackText => {
 };
 
 describe('CombatBattleScene presentation runtime', () => {
+  it('routes only slash-basic to the native renderer', () => {
+    const nativeRenderer = {
+      playSlash: vi.fn(),
+      advance: vi.fn(),
+      destroy: vi.fn(),
+    };
+    const scene = new CombatBattleScene(vi.fn(), vi.fn(), nativeRenderer);
+    const options = (scene as unknown as {
+      createPresentationPortOptions(): PhaserCombatPresentationPortOptions;
+    }).createPresentationPortOptions();
+
+    expect(options.playNativeEffect('slash-basic', 270, 414)).toBe(true);
+    expect(options.playNativeEffect('impact-basic', 690, 414)).toBe(false);
+    expect(nativeRenderer.playSlash).toHaveBeenCalledOnce();
+    expect(nativeRenderer.playSlash).toHaveBeenCalledWith(270, 414);
+  });
+
+  it('advances the native renderer with the clamped presentation delta', () => {
+    const nativeRenderer = {
+      playSlash: vi.fn(),
+      advance: vi.fn(),
+      destroy: vi.fn(),
+    };
+    vi.spyOn(BattleScene.prototype, 'update').mockImplementation(() => undefined);
+    const scene = new CombatBattleScene(vi.fn(), vi.fn(), nativeRenderer);
+    Object.assign(scene, {
+      presentation: { present: vi.fn(), advance: vi.fn() },
+      campaign: { consumePresentationEvents: vi.fn(() => []) },
+      failed: false,
+    });
+
+    scene.update(0, COMBAT_BALANCE.maxFrameContributionMs + 500);
+
+    expect(nativeRenderer.advance).toHaveBeenCalledWith(COMBAT_BALANCE.maxFrameContributionMs);
+  });
+
   it('routes critical hits and health through the controller and Phaser port', () => {
     const options: PhaserCombatPresentationPortOptions = {
       animationExists: vi.fn(() => true),

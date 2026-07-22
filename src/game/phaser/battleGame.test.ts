@@ -27,6 +27,20 @@ const phaserBoundary = vi.hoisted(() => {
   return { Game, game, getScene, pause, resume, destroy, graphics, shake, addTween, text };
 });
 
+const nativeRendererBoundary = vi.hoisted(() => {
+  const renderer = {
+    playSlash: vi.fn(),
+    advance: vi.fn(),
+    destroy: vi.fn(),
+  };
+  const createNativeCombatSpriteRenderer = vi.fn(() => renderer);
+  return { createNativeCombatSpriteRenderer, renderer };
+});
+
+vi.mock('../rendering/nativeCombatSpriteRenderer', () => ({
+  createNativeCombatSpriteRenderer: nativeRendererBoundary.createNativeCombatSpriteRenderer,
+}));
+
 vi.mock('phaser', () => {
   class Scene {
     add = { graphics: phaserBoundary.graphics, text: phaserBoundary.text };
@@ -87,6 +101,8 @@ describe('createBattleGame', () => {
     });
 
     expect(phaserBoundary.Game).toHaveBeenCalledTimes(1);
+    expect(nativeRendererBoundary.createNativeCombatSpriteRenderer).toHaveBeenCalledOnce();
+    expect(nativeRendererBoundary.createNativeCombatSpriteRenderer).toHaveBeenCalledWith({ parent, onError: expect.any(Function) });
     expect(phaserBoundary.Game).toHaveBeenCalledWith(expect.objectContaining({
       parent,
       width: 960,
@@ -135,6 +151,7 @@ describe('createBattleGame', () => {
     controller.destroy();
     expect(phaserBoundary.destroy).toHaveBeenCalledTimes(1);
     expect(phaserBoundary.destroy).toHaveBeenCalledWith(true);
+    expect(nativeRendererBoundary.renderer.destroy).toHaveBeenCalledTimes(1);
 
     controller.startBreakthrough();
     controller.startBoss();
