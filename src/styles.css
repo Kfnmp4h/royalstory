@@ -523,6 +523,17 @@ button {
   height: 100% !important;
 }
 
+.battle-host {
+  position: relative;
+}
+
+.native-combat-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
 .diagnostics {
   display: grid;
   width: min(100%, 70rem);

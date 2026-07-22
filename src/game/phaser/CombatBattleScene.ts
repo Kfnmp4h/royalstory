@@ -2,7 +2,9 @@ import Phaser from 'phaser';
 import { COMBAT_BALANCE } from '../balance';
 import type { PersistentCampaignController, EncounterVisual } from '../campaign/campaignTypes';
 import type { ActorId, CombatEvent, CombatSnapshot } from '../types';
+import type { NativeCombatSpriteRenderer } from '../rendering/nativeCombatSpriteRenderer';
 import { BattleScene } from './BattleScene';
+import type { BattleStatus } from './battleGame';
 import { preloadCombatEffects, registerCombatAnimations } from './combatPresentation/combatAssets';
 import {
   createCombatPresentationController,
@@ -64,6 +66,14 @@ export class CombatBattleScene extends BattleScene {
   private presentation?: CombatPresentationController;
   private readonly delayedHealthLayers = new Map<ActorId, DelayedHealthLayer>();
 
+  constructor(
+    onStatus: (status: BattleStatus) => void,
+    onError: (error: Error) => void,
+    private readonly nativeRenderer?: NativeCombatSpriteRenderer,
+  ) {
+    super(onStatus, onError);
+  }
+
   preload(): void {
     preloadCombatEffects(this.load);
   }
@@ -86,7 +96,9 @@ export class CombatBattleScene extends BattleScene {
 
     const presentationEvents = internals.campaign.consumePresentationEvents?.() ?? [];
     this.presentation.present(presentationEvents);
-    this.presentation.advance(Math.min(delta, COMBAT_BALANCE.maxFrameContributionMs));
+    const presentationDelta = Math.min(delta, COMBAT_BALANCE.maxFrameContributionMs);
+    this.presentation.advance(presentationDelta);
+    this.nativeRenderer?.advance(presentationDelta);
   }
 
   private getInternals(): BattleSceneInternals {
@@ -143,7 +155,11 @@ export class CombatBattleScene extends BattleScene {
             ? PLAYER_POSITION
             : ENEMY_POSITION;
       },
-      playNativeEffect: () => false,
+      playNativeEffect: (key, x, y) => {
+        if (key !== 'slash-basic' || !this.nativeRenderer) return false;
+        this.nativeRenderer.playSlash(x, y);
+        return true;
+      },
       flashActor: (actorId, critical) => this.flashActor(actorId, critical),
       createFeedbackText: (kind) => this.createFeedbackText(kind),
       tweenFeedbackText: (text, tween) => {

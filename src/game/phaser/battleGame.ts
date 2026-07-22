@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { createCampaignController } from '../campaign/campaignController';
 import type { CampaignSnapshot, EncounterVisual, PersistentCampaignController } from '../campaign/campaignTypes';
 import type { CampaignPersistentState, PlayerCommand } from '../save/saveTypes';
+import { createNativeCombatSpriteRenderer } from '../rendering/nativeCombatSpriteRenderer';
 import { CombatBattleScene } from './CombatBattleScene';
 import { registerBattleCommandReceiver, registerBattleStateReceiver } from './battleStateBridge';
 
@@ -88,7 +89,8 @@ export function createBattleGame({
   onStatus,
   onError,
 }: CreateBattleGameOptions): BattleController {
-  const battleScene = new CombatBattleScene(onStatus, onError);
+  const nativeRenderer = createNativeCombatSpriteRenderer({ parent, onError });
+  const battleScene = new CombatBattleScene(onStatus, onError, nativeRenderer);
   const replaceableScene = battleScene as unknown as ReplaceableBattleScene;
   if (initialState) {
     replaceableScene.campaign = createCampaignController(undefined, { initialState });
@@ -158,6 +160,7 @@ export function createBattleGame({
       destroyed = true;
       unregisterBattleStateReceiver();
       unregisterBattleCommandReceiver();
+      nativeRenderer.destroy();
       game.destroy(true);
     },
   };
