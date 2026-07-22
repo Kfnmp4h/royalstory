@@ -48,6 +48,7 @@ describe('CombatBattleScene presentation runtime', () => {
       getActorPosition: vi.fn((actorId) => actorId === 'player'
         ? { x: 270, y: 414 }
         : { x: 690, y: 414 }),
+      playNativeEffect: vi.fn(() => false),
       flashActor: vi.fn(),
       createFeedbackText: vi.fn(() => createText()),
       tweenFeedbackText: vi.fn(),

@@ -143,6 +143,7 @@ export class CombatBattleScene extends BattleScene {
             ? PLAYER_POSITION
             : ENEMY_POSITION;
       },
+      playNativeEffect: () => false,
       flashActor: (actorId, critical) => this.flashActor(actorId, critical),
       createFeedbackText: (kind) => this.createFeedbackText(kind),
       tweenFeedbackText: (text, tween) => {

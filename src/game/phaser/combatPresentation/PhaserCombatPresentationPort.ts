@@ -40,6 +40,7 @@ export interface PhaserCombatPresentationPortOptions {
   animationExists(key: string): boolean;
   createSprite(x: number, y: number, textureKey: string): PhaserCombatEffectSprite;
   getActorPosition(actorId: ActorId): Readonly<{ x: number; y: number }>;
+  playNativeEffect(key: CombatEffectKey, x: number, y: number): boolean;
   flashActor(actorId: ActorId, critical: boolean): void;
   createFeedbackText(kind: PhaserCombatFeedbackKind): PhaserCombatFeedbackText;
   tweenFeedbackText(text: PhaserCombatFeedbackText, tween: PhaserCombatFeedbackTween): void;
@@ -99,14 +100,16 @@ export function createPhaserCombatPresentationPort(
 
   return {
     hasEffect(key): boolean {
-      return options.animationExists(COMBAT_EFFECT_MANIFEST[key].animationKey);
+      return key === 'slash-basic'
+        || options.animationExists(COMBAT_EFFECT_MANIFEST[key].animationKey);
     },
 
     playEffect(key, actorId): void {
       const definition = COMBAT_EFFECT_MANIFEST[key];
+      const position = options.getActorPosition(actorId);
+      if (options.playNativeEffect(key, position.x, position.y)) return;
       if (!options.animationExists(definition.animationKey)) return;
 
-      const position = options.getActorPosition(actorId);
       const sprite = options.createSprite(position.x, position.y, definition.key);
       sprite.setOrigin(definition.origin.x, definition.origin.y);
       sprite.setScale(definition.scale);
